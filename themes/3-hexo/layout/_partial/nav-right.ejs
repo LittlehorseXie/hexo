@@ -16,7 +16,7 @@
     <% } %>
     <nav id="title-list-nav">
         <% site.posts.forEach(function(post, i){  %>
-        <a <% if(post.top){%>id="top"<%}%> class="<% post.categories.forEach(function(category, i){ %><%=category.name%> <% }) %>"
+        <a <% if(post.top){%><%}%> class="<% post.categories.forEach(function(category, i){ %><%=category.name%> <% }) %>"
            href="<%- url_for(post.path) %>"
            data-tag="<% post.tags.forEach(function(tag, i){ %><%=tag.name%><% if (i+1<post.tags.length){%>,<%}})%>"
            data-author="<% if(theme.author && theme.author.on==true && post.author) {%><%=post.author %><%}%>" >

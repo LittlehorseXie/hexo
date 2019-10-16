@@ -2,6 +2,7 @@
 title: 优化之回流和重绘篇
 category: 性能优化
 description: 浏览器的回流、重绘和页面性能息息相关，主要是DOM操作和CSS动画
+top: 78
 ---
 
 ## 先回顾一下回流和重绘
