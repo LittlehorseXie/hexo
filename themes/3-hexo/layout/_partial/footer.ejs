@@ -15,21 +15,27 @@
         }).AutoComplete('show');
     })
     function initArticle() {
+        console.log(1)
         /*渲染对应的表格样式*/
         <% if(theme.table){ %>
             $(".post .pjax table").addClass("<%=theme.table%>");
         <% } %>
 
 
-        /*高亮代码块行号*/
+        /*高亮代码块*/
         <%if(theme.highlight && theme.highlight.on&& theme.highlight.lineNum){%>
-        $('pre code').each(function(){
-            var lines = $(this).text().split('\n').length - 1, widther='';
+        $('.code').each(function(i, block) {
+            hljs.highlightBlock(block)
+        })
+        $('.gutter pre').each(function(i, block){
+            console.log(block)
+            var lines = block.innerText.split('\n').length - 1, widther='';
+            console.log(lines)
             if (lines>99) {
                 widther = 'widther'
             }
             var $numbering = $('<ul/>').addClass('pre-numbering ' + widther).attr("unselectable","on");
-            $(this).addClass('has-numbering ' + widther)
+            $(block).addClass('has-numbering ' + widther)
                     .parent()
                     .append($numbering);
             for(var i=1;i<=lines;i++){
@@ -302,12 +308,13 @@
 <!--加入行号的高亮代码块样式-->
 <%if(theme.highlight && theme.highlight.on && theme.highlight.lineNum){%>
 <style>
+    .highlight {
+        font-size: 14px;
+    }
     pre{
         position: relative;
         margin-bottom: 24px;
         border-radius: 10px;
-        border: 1px solid #e2dede;
-        background: #FFF;
         overflow: hidden;
     }
     code.has-numbering{
@@ -321,12 +328,16 @@
         position: absolute;
         top: 0;
         left: 0;
-        width: 20px;
+        width: 27px;
         padding: 0.5em 3px 0.7em 5px;
-        border-right: 1px solid #C3CCD0;
         text-align: right;
+        list-style: none;
+        margin: 1em 0px;
         color: <% if(theme.highlight.theme=="brown-paper"){ %>#616161<%}else{%>#AAA<%}%>;
-        background-color: <% if(theme.highlight.theme=="atom-light"){ %>#fafafa<%}%>;
+        background-color: <% if(theme.highlight.theme=="atom-light"){ %>#fafafa<%}else{%>#FFF<%}%>;
+    }
+    .pre-numbering li{
+        
     }
     .pre-numbering.widther {
         width: 35px;

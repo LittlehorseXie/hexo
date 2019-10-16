@@ -128,7 +128,7 @@ Reflow的成本比Repaint的成本高得多的多。DOM Tree里的每个结点�
 
 举个例子：
 
-```text
+```
 var bstyle = document.body.style; // cache
  
 bstyle.padding = "20px"; // reflow, repaint
