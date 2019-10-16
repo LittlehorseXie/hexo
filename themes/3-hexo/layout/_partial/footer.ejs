@@ -15,7 +15,6 @@
         }).AutoComplete('show');
     })
     function initArticle() {
-        console.log(1)
         /*渲染对应的表格样式*/
         <% if(theme.table){ %>
             $(".post .pjax table").addClass("<%=theme.table%>");
@@ -28,9 +27,7 @@
             hljs.highlightBlock(block)
         })
         $('.gutter pre').each(function(i, block){
-            console.log(block)
             var lines = block.innerText.split('\n').length - 1, widther='';
-            console.log(lines)
             if (lines>99) {
                 widther = 'widther'
             }

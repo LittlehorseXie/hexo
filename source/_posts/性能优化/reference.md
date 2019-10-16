@@ -43,9 +43,9 @@ top: 98
 
 #### 优化篇
 
-* [x] \*\*\*\*[高性能滚动 scroll 及页面渲染优化](https://www.cnblogs.com/coco1s/p/5499469.html)
+* [x] [高性能滚动 scroll 及页面渲染优化](https://www.cnblogs.com/coco1s/p/5499469.html)
 * [x] [延迟加载图像和视频](https://developers.google.com/web/fundamentals/performance/lazy-loading-guidance/images-and-video/) 
-* [x] \*\*\*\*[图片优化瘦身 给网站提速](https://juejin.im/post/5cbc313f518825324c44f43b)
+* [x] [图片优化瘦身 给网站提速](https://juejin.im/post/5cbc313f518825324c44f43b)
 * [x] [探究WebP一些事儿](https://aotu.io/notes/2016/06/23/explore-something-of-webp/index.html)
 * [ ] [PageSpeed Insights 规则](https://developers.google.com/speed/docs/insights/rules) 
 * [ ] [CSS Animation性能优化](https://www.w3cplus.com/animation/animation-performance.html)
