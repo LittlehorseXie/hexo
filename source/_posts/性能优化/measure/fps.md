@@ -29,7 +29,7 @@ FPS ---- 动画帧率
 
 ### Web端：借助 Chrome 开发者工具
 
-![](../.gitbook/assets/qi-ye-wei-xin-20190328051638.png)
+![](../../../assets/qi-ye-wei-xin-20190328051638.png)
 
 ### 技术方法：借助 Frame Timing API
 

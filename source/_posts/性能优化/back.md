@@ -31,7 +31,7 @@ top: 95
 
 **第四次挥手**：Client端收到连接释放报文段后，"就知道可以关闭连接了，但是他还是不相信网络，怕Server端不知道要关闭，所以发送确认报文段（ACK = 1，seq = u + 1，ack = w + 1）后进入TIME\_WAIT状态，如果Server端没有收到ACK则可以重传。“，Server端收到ACK后，"就知道可以断开连接了"。Client端等待了2MSL后依然没有收到回复，则证明Server端已正常关闭，那好，我Client端也可以关闭连接了，Client 才进入 CLOSED 状态。Ok，TCP连接就这样关闭了！
 
-![](.gitbook/assets/54797753-6f6e1e00-4c90-11e9-88f3-cf9fc6a0ef73.png)
+![](../../assets/54797753-6f6e1e00-4c90-11e9-88f3-cf9fc6a0ef73.png)
 
 
 

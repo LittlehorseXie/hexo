@@ -6,5 +6,5 @@ top: 87
 
 ### Chrome的performance
 
-![](../.gitbook/assets/image%20%282%29.png)
+![](../../../assets/image%20%282%29.png)
 
