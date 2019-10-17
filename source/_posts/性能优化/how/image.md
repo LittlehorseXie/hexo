@@ -6,7 +6,7 @@ top: 76
 
 让图片加载这件事儿变得更美好
 
-![](../../../assets/性能优化/image%20%284%29.png)
+![](../../../assets/性能优化/loading.png)
 
 ## 1 WebP
 
@@ -40,7 +40,7 @@ WebP是一种支持有损压缩和无损压缩的图片文件格式。可能是�
 
 首先，我们看一下WebP的兼容性，来源：[Can I Use WebP](https://caniuse.com/#search=webp)
 
-![](../../../assets/性能优化/image.png)
+![](../../../assets/性能优化/webp.png)
 
 由上图可以看出，目前Chrome兼容性最好（毕竟是自家产品），Safari兼容最差。总体来说，WebP的兼容性不太乐观。
 
