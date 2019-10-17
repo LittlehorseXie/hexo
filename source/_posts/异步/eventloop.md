@@ -1,6 +1,7 @@
 ---
 title: JavaScript 执行机制
 category: 异步
+date: 2019-10-17 21:17
 ---
 
 > javascript是一门单线程语言
