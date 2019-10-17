@@ -6,5 +6,5 @@ top: 87
 
 ### Chrome的performance
 
-![](../../../assets/image%20%282%29.png)
+![](../../../assets/性能优化/image%20%282%29.png)
 
