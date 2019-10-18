@@ -11,7 +11,7 @@
   -ms-user-select none
   -o-user-select none
   user-select none
-  
+  font-family "Open Sans", "Hiragino Sans GB", sans-serif
   .title-list
     margin-left 0
     transition margin-left .5s
@@ -20,14 +20,15 @@
     #title-list-nav
       padding-top 20px
     form
+      display flex
+      align-items center
+      justify-content space-between
       height 65px
+      padding 0 20px
       border-bottom 1px solid #e5e8ec
-      position: absolute;
-      top: 0;
-      width: 100%;
       .cross
         position absolute
-        top 36px
+        top 24px
         right 129px
         display none
         &:hover
@@ -35,20 +36,15 @@
         &:before
           content "\ea0f"
       .search
-        width 250px
-        padding 20px 0 0 20px
         color #383636
-        font-size 18px
-        font-family inherit
+        font-size 16px
+        font-weight 300
         background inherit
         border none
         outline none
         &::-webkit-calendar-picker-indicator
           opacity 0
       span
-        position absolute
-        top 25px
-        right 10px
         #tagspan
           font-size 12px
         #tagswitch
@@ -212,7 +208,9 @@
             color red
             font-style normal
       a
-        display block
+        display flex
+        align-items center
+        justify-content space-between
         height 32px
         color  inherit
         position relative
