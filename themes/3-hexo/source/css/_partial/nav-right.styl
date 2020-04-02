@@ -215,13 +215,15 @@
         color  inherit
         position relative
         &:before
-          content "\e901"
+          content ""
           position absolute
           top 8px
           left 14px
+          height 16px
+          border-left 2px
           z-index 1
           font-size 14px
-          color rgb(237, 111, 109)
+          border-left 3px solid #ed6f6d
         &#top:before
           content "\f08d"
         &.hover:before
