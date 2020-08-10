@@ -2,6 +2,7 @@
 title: Redux/React-redux/redux中间件设计实现剖析
 category: Redux
 date: 2020-07-30 20:29
+top: 95
 ---
 
 ## 一、Redux做了什么
@@ -185,4 +186,129 @@ function connect(mapStateToProps, mapDispatchToProps) {
 
 其实connect这种设计，是`装饰器模式`的实现，所谓装饰器模式，简单地说就是对类的一个包装，动态地拓展类的功能。connect以及React中的高阶组件（HoC）都是这一模式的实现。除此之外，也有更直接的原因：这种设计能够兼容ES7的装饰器(Decorator)，使得我们可以用@connect这样的方式来简化代码
 
+### 3. combineReducers 实现
+
+
+### 4. compose 实现
+
+
 ## 三、redux Middleware实现
+
+所谓中间件，我们可以理解为拦截器，用于对某些过程进行拦截和处理，且中间件之间能够串联使用。在redux中，我们中间件拦截的是dispatch提交到reducer这个过程（位于 action 被发起之后，到达 reducer 之前的扩展点），从而增强dispatch的功能。
+
+![](../../assets/Redux/redux-middleware.png)
+
+middleware 最优秀的特性就是可以被链式组合。你可以在一个项目中使用多个独立的第三方 middleware。
+你所使用的任何 middleware 都可以以自己的方式解析你 dispatch 的任何内容，并继续传递 actions 给下一个 middleware。
+
+但当 middleware 链中的最后一个 middleware 开始 dispatch action 时，这个 action 必须是一个普通对象。这是同步式的 Redux 数据流 开始的地方（注：这里应该是指，你可以使用任意多异步的 middleware 去做你想做的事情，但是需要使用普通对象作为最后一个被 dispatch 的 action ，来将处理流程带回同步方式）。
+
+下面我们以一个记录日志的中间件为例，一步一步分析redux中间件的设计实现。
+
+我们思考一下，如果我们想在每次dispatch之后，打印一下store的内容，我们会如何实现呢：
+
+### 1. 在每次dispatch之后手动打印store的内容
+
+```js
+store.dispatch({ type: 'plus' })
+console.log('next state', store.getState())
+```
+
+这是最直接的方法，虽然这样做达到了想要的效果，但是你并不想每次都这么干，我们至少要把这部分功能提取出来。
+
+### 2. 封装公共 dispatchAction 方法
+
+```js
+function dispatchAndLog(store, action) {    
+  store.dispatch(action)    
+  console.log('next state', store.getState())
+}
+```
+
+你可以选择到此为止，但是每次都要导入一个外部方法总归还是不太方便。
+
+### 3. Monkeypatching Dispatch - 替换dispatch方法
+
+> Monkeypatch是什么？
+> 根据在网上的搜索，应该是python中常用的技巧 -- 猴子补丁，属性在运行时的动态替换
+> 主要用处是：在运行时替换方法、属性等；在不修改第三方代码的情况下增加原来不支持的功能
+> 猴子补丁的起源？
+> 《松本行弘的程序世界》这本书里面专门有一章讲了猴子补丁的设计：所谓的猴子补丁的含义是指在动态语言中，不去改变源码而对功能进行追加和变更。猴子补丁的这个叫法起源于Zope框架，大家在修正Zope的Bug的时候经常在程序后面追加更新部分，这些被称作是“杂牌军补丁(guerilla patch)”，后来guerilla就渐渐的写成了gorllia(猩猩)，再后来就写了monkey(猴子)，所以猴子补丁的叫法是这么莫名其妙的得来的。
+
+```js
+let next = store.dispatch
+store.dispatch = function dispatchAndLog(action) {  
+  let result = next(action)  
+  console.log('next state', store.getState())  
+  return result
+}
+```
+
+如果我们直接把dispatch给替换，这样每次使用的时候不就不需要再从外部引用一次了吗？
+对于单纯打印日志来说，这样就足够了。
+但是如果我们还有一个监控dispatch错误的需求呢？
+我们当然可以在打印日志的代码后面加上捕获错误的代码，但随着功能模块的增多，代码量会迅速膨胀，以后这个中间件就没法维护了，我们希望不同的功能是独立的可拔插的模块。
+
+### 4. 模块化
+
+```js
+function patchStoreToAddLogging (store) {
+  let next = store.dispatch
+  store.dispatch = (action) => {
+    let result = next(action)  
+    console.log('next state', store.getState())
+    return result
+  } 
+}
+
+function patchStoreToAddCrashReporting (store) {
+  let next = store.dispatch
+  store.dispatch = (action) => {
+    try {            
+      return next(action)        
+    } catch (err) {            
+      console.error('捕获一个异常!', err)            
+      throw err        
+    }
+  } 
+}
+```
+
+我们把不同功能的模块拆分成不同的方法，通过在方法内获取上一个中间件包装过的store.dispatch实现链式调用。然后我们就能通过调用这些中间件方法，分别使用、组合这些中间件。
+
+```js
+patchStoreToAddLogging(store)
+patchStoreToAddCrashReporting(store)
+```
+
+到这里我们基本实现了可组合、拔插的中间件，但我们仍然可以把代码再写好看一点。
+我们注意到，我们当前写的中间件方法都是先获取dispatch，然后在方法内替换dispatch，这部分重复代码我们可以再稍微简化一下：
+我们不在方法内替换dispatch，而是返回一个新的dispatch，然后让循环来进行每一步的替换。
+
+### 5. applyMiddleware - 隐藏 Monkeypatching
+
+```js
+function logger (store) {
+  let next = store.dispatch
+  return (action) => {
+    let result = next(action)  
+    console.log('next state', store.getState())
+    return result
+  }
+}
+function applyMiddleware(store, middlewares) {
+  // middlewares = [ ...middlewares ]  // 浅拷贝数组, 避免下面reserve()影响原数组  
+  // middlewares.reverse()  // 由于循环替换dispatch时, 前面的中间件在最里层, 因此需要翻转数组才能保证中间件的调用顺序      
+  middlewares.forEach(middleware => {
+    store.dispatch = middleware(store)
+  })
+}
+```
+然后我们就能以这种形式增加中间件了：
+```js
+applyMiddleware(store, [logger, crashReporter])
+```
+尽管我们做了很多，实现方式依旧是 monkeypatching。
+因为我们仅仅是将它隐藏在我们的框架内部，并没有改变这个事实。
+
+### 6. 移除 Monkeypatching
