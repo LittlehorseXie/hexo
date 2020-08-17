@@ -61,6 +61,7 @@ shouldUpdate =
 
 ### 场景1
 
+引用赋值虽然可以节省内存，但当应用复杂之后，可变状态往往会变成噩梦
 如果state如下，直接修改了data.list[0].name = 'ccc'，本期望在改变之后组件可以重新渲染，但实际上并不会渲染
 
 ```js
@@ -79,7 +80,11 @@ const data = {
 ### 场景2
 
 如果state如下，数据异常丰富，需要修改深层级的某一个值时
-如果用`Object.assign`写法过于复杂，且深层还是浅拷贝；如果用`深拷贝`浪费内存，且深拷贝复杂引用类型时需要深度遍历，这样的做法在React这样频繁更新数据的场景，性能不佳
+如果用`Object.assign`写法过于复杂，且深层还是浅拷贝；
+如果用`深拷贝`会浪费内存，且深拷贝复杂引用类型时需要深度遍历，这样的做法在React这样频繁更新数据的场景，性能不佳，比如拥有 100,000 个属性的对象，这个操作耗费了 134ms。性能损失主要原因是 “结构共享” 操作需要遍历近10万个属性，而这些引用操作耗费了100ms以上的时间
+如果用`Map`，就性能而言可以替代 Immutable，但就结合 react state 使用而言，无法替代 Immutable。
+react state  判断数据更新的条件是，对象引用是否变化。Map 跪在这个特性上，它无法使 set 后的 map 对象产生一份新的引用。这样会导致更改了子属性后，不会触发 reRender。因此虽然 Map 性能不错，但无法胜任 Object.assign 或 immutablejs 库对 react state 的支持。
+
 
 ```js
 const data = {
@@ -90,13 +95,18 @@ const data = {
 }
 ```
 
+解决办法就是`减少引用指向的操作数量`，而且由于引用指向到任何对象的损耗都几乎一致（无论目标对象极限小或者无穷大，引用消耗时间都几乎没有区别），我们需要一种精心设计的树状结构将打平的引用建立深度，以减少引用操作次数。
+Immulate可以很好地解决这些问题。
+
+
 ## immutable 登场
+
 
 ### immutable 是什么
 
 ![](../../assets/Redux/immutable.gif)
 
-> 相对于muttable，Immutable就是在创建变量，赋值后便不可更改，若对其有任何变更，就会传回一个新值
+相对于muttable，Immutable就是在创建变量，赋值后便不可更改，若对其有任何变更，就会传回一个新值
 
 ### immutable 和 mutable对比
 
@@ -135,6 +145,84 @@ handleClick = () => {
   console.log(this.state.count2.getIn('a')) // 是9，注意 仍不会触发render
 ```
 
+### Immutable.js 几种数据类型
+
+List: 有序索引集，类似JavaScript中的Array。
+Map: 无序索引集，类似JavaScript中的Object。
+OrderedMap: 有序的Map，根据数据的set()进行排序。
+Set: 没有重复值的集合。
+OrderedSet: 有序的Set，根据数据的add进行排序。
+Stack: 有序集合，支持使用unshift()和shift()添加和删除。
+Record: 一个用于生成Record实例的类。类似于JavaScript的Object，但是只接收特定字符串为key，具有默认值。
+Seq: 序列，但是可能不能由具体的数据结构支持。
+Collection: 是构建所有数据结构的基类，不可以直接构建。
+
+### Immutable.js 常用API
+
+**fromJS()**
+作用：将一个js数据转换为Immutable类型的数据 用法：fromJS(value, converter) 简介：value是要转变的数据，converter是要做的操作。第二个参数可不填，默认情况会将数组准换为List类型，将对象转换为Map类型，其余不做操作
+
+**toJS()**
+作用：将一个Immutable数据转换为JS类型的数据 用法：value.toJS()
+
+**is()**
+作用：对两个对象进行比较 用法：is(map1,map2) 简介：和js中对象的比较不同，在js中比较两个对象比较的是地址，但是在Immutable中比较的是这个对象hashCode和valueOf，只要两个对象的hashCode相等，值就是相同的，避免了深度遍历，提高了性能
+
+**List() 和 Map()**
+作用：用来创建一个新的List/Map对象 用法:
+//List
+Immutable.List(); // 空List
+Immutable.List([1, 2]);
+
+//Map
+Immutable.Map(); // 空Map
+Immutable.Map({ a: '1', b: '2' });
+
+**List.isList() 和 Map.isMap()**
+作用：判断一个数据结构是不是List/Map类型 用法：
+List.isList([]); // false
+List.isList(List()); // true
+
+Map.isMap({}) // false
+Map.isMap(Map()) // true
+
+
+**get() 、 getIn()**
+作用：获取数据结构中的数据
+//获取List索引的元素
+ImmutableData.get(0);
+
+// 获取Map对应key的value
+ImmutableData.get('a');
+
+// 获取嵌套数组中的数据
+ImmutableData.getIn([1, 2]);
+
+// 获取嵌套map的数据
+ImmutableData.getIn(['a', 'b']);
+
+**has() 、 hasIn()**
+作用：判断是否存在某一个key 用法：
+Immutable.fromJS([1,2,3,{a:4,b:5}]).has('0'); //true
+Immutable.fromJS([1,2,3,{a:4,b:5}]).has('0'); //true
+Immutable.fromJS([1,2,3,{a:4,b:5}]).hasIn([3,'b']) //true
+
+**includes()**
+作用：判断是否存在某一个value 用法：
+Immutable.fromJS([1,2,3,{a:4,b:5}]).includes(2); //true
+Immutable.fromJS([1,2,3,{a:4,b:5}]).includes('2'); //false 不包含字符2
+Immutable.fromJS([1,2,3,{a:4,b:5}]).includes(5); //false 
+Immutable.fromJS([1,2,3,{a:4,b:5}]).includes({a:4,b:5}) //false
+Immutable.fromJS([1,2,3,{a:4,b:5}]).includes(Immutable.fromJS({a:4,b:5})) //true
+
+**first() 、 last()**
+作用：用来获取第一个元素或者最后一个元素，若没有则返回undefined
+
+**设置** set()
+
+**删除** delete
+
+
 ### immutable 原理
 
-
+Immutable 实现的原理是 Persistent Data Structure（持久化数据结构），也就是使用旧数据创建新数据时，要保证旧数据同时可用且不变。同时为了避免 deepCopy 把所有节点都复制一遍带来的性能损耗，Immutable 使用了Structural Sharing（结构共享），即如果对象树中一个节点发生变化，只修改这个节点和受它影响的父节点，其它节点则进行共享。
