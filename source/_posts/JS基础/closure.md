@@ -2,6 +2,7 @@
 title: 闭包
 category: JS基础
 date: 2020-08-27 10:40
+top: 97
 ---
 
 ## 闭包的定义
