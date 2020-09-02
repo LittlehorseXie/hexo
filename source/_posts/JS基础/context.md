@@ -55,7 +55,7 @@ javascript在执行一个代码段之前，都会进行这些“准备工作”�
 
 > 这里解释一下为什么代码段分为这三种。
 > 所谓“代码段”就是一段文本形式的代码。
-> 首先，全局代码是一种，这个应该没有非议，本来就是手写文本到<script>标签里面的。
+> 首先，全局代码是一种，这个应该没有非议，本来就是手写文本到 script标签里面的。
 > 其次，eval代码接收的也是一段文本形式的代码。 eval('alert(1)')
 > 最后，函数体是代码段是因为函数在创建时，本质上是 new Function(…) 得来的，其中需要传入一个文本形式的参数作为函数体。var fn1 = new Function('x', 'console.log(x+1)')
 
@@ -75,7 +75,7 @@ arguments          赋值
 给执行上下文环境下一个通俗的定义——`在执行代码之前，把将要用到的所有的变量都事先拿出来，有的直接赋值了，有的先用undefined占个空`。
 
 
-## 执行上下文栈
+## 二、执行上下文栈
 
 讲完了上下文环境，又来了新的问题——在执行js代码时，会有数不清的函数调用次数，会产生许多个上下文环境。这么多上下文环境该如何管理，以及如何销毁而释放内存呢？
 
@@ -83,16 +83,75 @@ arguments          赋值
 
 其实这是一个`压栈出栈的过程`——执行上下文栈。
 
+![](../../assets/JS基础/context-stack.png)
+
+### 1 🌰
+
+下面我们根据一个例子来详细介绍上下文栈的压栈、出栈过程：
+
+```js
+var a = 10, // 1. 进入全局上下文环境
+    fn,
+    bar = function (x) {
+      var b = 5;
+      fn(x+b) // 3. 进入fn函数上下文环境
+    }
+fn = function(y) {
+  var c = 5
+  console.log(y+c)
+}
+bar(10) // 2. 进入bar函数上下文环境
+```
+
+**1. 在执行代码之前，先创建`全局上下文环境`**
+
+全局上下文环境
+a undefined
+fn undefined
+bar undefined
+this window 
+
+全局上下文中的变量对象其实就是全局对象，我们可以通过this来访问全局对象
+在浏览器环境中 this === window，在node环境中 this === global
+
+**2. 然后执行代码，在代码执行到最后一行之前，上下文环境中的变量都在`执行过程中被赋值`**
+
+全局上下文环境
+a 10
+fn function
+bar function
+this window
+
+**3. 执行到最后一行时，调用bar函数，跳转到bar函数内部，执行函数语句之前，会创建一个新的执行上下文环境**
+
+bar函数-执行上下文环境
+b undefined
+x 10
+arguments [10]
+this window
+
+并将这个执行上下文环境压栈，设置为活动状态。
+
+![](../../assets/JS基础/context-stack1.png)
+
+**4. 执行到第5行，又调用了fn函数。进入fn函数，在执行函数体语句之前，会创建fn函数的执行上下文环境，并压栈，设置为活动状态。**
+
+![](../../assets/JS基础/context-stack2.png)
+
+**5. 待第5行执行完毕，即fn函数执行完毕后，此次调用fn所生成的上下文环境出栈，并且被销毁（已经用完了，就要及时销毁，释放内存）。**
+
+![](../../assets/JS基础/context-stack3.png)
+
+**6. 同理，待第13行执行完毕，即bar函数执行完毕后，调用bar函数所生成的上下文环境出栈，并且被销毁（已经用完了，就要及时销毁，释放内存）。**
+
+![](../../assets/JS基础/context-stack4.png)
+
+讲到这里，我不得不很遗憾的跟大家说：其实以上我们所演示的是一种比较理想的情况。有一种情况，而且是很常用的一种情况，无法做到这样干净利落的说销毁就销毁。这种情况就是伟大的——`闭包`。
 
 
+### 2 🌰
 
-
-
-
-
-
-
-这里用一个例子来讲解执行上下文栈的执行过程：
+再用一个例子来讲解执行上下文栈的执行过程：
 
 ```js
 var scope = 'global scope';
@@ -108,200 +167,73 @@ function checkscope(s) {
 checkscope('scope');
 ```
 
-当JS引擎解析代码的时候，最先碰到的就是`global scope`，所以一开始就会将全局上下文推入执行上下文栈
+**1. 执行代码之前，先创建全局上下文**
 
-这里我们用ECS来模拟执行上下文栈，用globalContext来表示全局上下文：
+全局上下文
+scope undefined
+checkscope function
 
-```js
-ESC = [
-  globalContext // 一开始只有全局上下文
-]
-```
+**2. 执行到最后一行之前，变量赋值**
 
-当代码执行到checkscope的时候，会创建`checkscope函数`执行上下文，并压入执行上下文栈：
+全局上下文
+scope 'global scope'
+checkscope function
 
-```js
-ESC = [
-  checkscopeContext, // 入栈
-  globalContext
-]
-```
+**3. 执行到最后一行时，调用checkscope函数，跳转到checkscope函数内部，执行函数语句之前，会创建一个新的执行上下文环境**
 
-当代码执行到return f()时，f函数的执行上下文会被创建：
+checkscope函数-上下文环境
+s 'scope'
+scope undefined // `变量提升`
+f function // `函数提升`
+arguments ['scope']
 
-```js
-ESC = [
-  fContext,
-  checkscopeContext,
-  globalContext
-]
-```
+**4. 执行checkscope函数，变量赋值**
 
-f函数执行完毕后，f函数的执行上下文出栈，随后checkscope函数执行完毕，checkscope函数的执行上下文出栈
+checkscope函数-上下文环境
+s 'scope'
+scope 'local scope'
+f function
+arguments ['scope']
 
-## 变量对象
+**5. 将要执行f函数**
+f函数-上下文环境
+scope undefined
 
-每一个执行上下文都有三个重要的属性：
+**6. 执行f函数，向上查找scope**
+输出local scope
 
-- 变量对象
-- 作用域链
-- this
+**7. 执行完后，逐步销毁上下文**
 
-### 全局上下文中的变量对象
+### 3 🌰
 
-全局上下文中的变量对象其实就是全局对象，我们可以通过this来访问全局对象
-在浏览器环境中 this === window，在node环境中 this === global
-
-### 函数上下文中的变量对象
-
-在函数执行之前，会为当前函数创建执行上下文，并且在此时，会创建变量对象：
-
-- 根据函数arguments属性初始化argumennts对象
-- 根据函数声明生成对应的属性，其值为一个指向内存中函数的引用指针。如果函数名称已存在，则覆盖
-- 根据变量声明生成对应的属性，此时初始值为undifined。如果变量名已声明，则忽略该变量声明
-
-已刚刚的代码为例：
-在执行checkscope函数之前，会为其创建执行上下文，并初始化变量对象，此时的变量对象为：
-```js
-VO = {
-  arguments: {
-    0: 'scope',
-    length: 1,
-  },
-  s: 'scope', // 传入的参数
-  f: pointer to function f(),
-  scope: undefined, // 此时声明的变量为undefined
-}
-```
-随着checkscope函数的执行，变量对象被激活，变相对象内的属性随着代码的执行而改变：
-```js
-VO = {
-  arguments: {
-    0: 'scope',
-    length: 1,
-  },
-  s: 'scope', // 传入的参数
-  f: pointer to function f(),
-  scope: 'local scope', // 变量赋值
-}
-```
-
-其实也可以用另一个概念“函数提升”和“变量提升”来解释
-
-## 作用域链
-
-之前第二部分我们按照作用域的说法描述了作用域链，在这里我们按照另一种说法 -- 执行上下文举例说一下作用域链
-
-### 例子1
+将上面的🌰改动一下
 
 ```js
 var scope = 'global scope';
+function f() {
+  return scope;
+}
 
 function checkscope(s) {
   var scope = 'local scope';
-
-  function f() {
-    return scope;
-  }
   return f();
 }
-checkscope('scope'); // 'local scope'
-```
-首先在checkscope函数声明的时候，内部会绑定一个[[scope]]的内部属性：
-```js
-checkscope.[[scope]] = [
-  globalContext.VO
-];
-```
-接着在checkscope函数执行之前，创建执行上下文checkscopeContext，并推入执行上下文栈：
-
-复制函数的[[scope]]属性初始化作用域链；
-创建变量对象；
-将变量对象压入作用域链的最顶端；
-
-```js
-checkscopeContext = {
-  scope: [VO, checkscope.[[scope]]],
-  VO = {
-    arguments: {
-      0: 'scope',
-      length: 1,
-    },
-    s: 'scope', // 传入的参数
-    f: pointer to function f(),
-    scope: undefined, // 此时声明的变量为undefined
-  },
-}
-```
-接着，随着函数的执行，修改变量对象：
-```js
-checkscopeContext = {
-  scope: [VO, checkscope.[[scope]]],
-  VO = {
-    ...
-    scope: 'local scope', // 此时声明的变量为undefined
-  },
-}
-```
-### 例子2
-```js
-var scope = 'global scope';
-
-function f() {
-  console.log(scope)
-}
-
-function checkscope() {
-  var scope = 'local scope';
-
-  f();
-}
-checkscope(); // 'global scope'
+checkscope('scope');
 ```
 
-首先遇到了f函数的声明，此时为其绑定[[scope]]属性：
-```js
-f.[[scope]] = [
-  globalContext.VO, // 此时的全局上下文的变量对象中保存着scope = 'global scope';
-];
-```
-然后我们直接跳过checkscope的执行上下文的创建和执行的过程，直接来到f函数的执行上。此时在函数执行之前初始化f函数的执行上下文：
-```js
-fContext = {
-  scope: [VO, globalContext.VO], // 复制f.[[scope]]，f.[[scope]]只有全局执行上下文的变量对象
-  VO = {
-    arguments: {
-      length: 0,
-    },
-  },
-}
-```
-然后到了f函数执行的过程，console.log(scope)，会沿着f函数的作用域链查找scope变量，先是去自己执行上下文的变量对象中查找，没有找到，然后去global执行上下文的变量对象上查找，此时scope的值为global scope。
+**1. 执行代码之前，先创建全局上下文**
+
+全局上下文
+scope undefined
+f function
+checkscope function
+
+**2. 执行到最后一行之前，变量赋值**
+
+全局上下文
+scope 'global scope'
+f function // 这时已经有f了 当f执行的时候，就先找f函数上下文的scope，没找到，再向上找到'global scope'
+checkscope function
 
 
 
-
-## 执行上下文和作用域的区别
-
-许多开发人员经常混淆作用域和执行上下文的概念，误以为他们是相同的概念，但并非如此
-
-我们知道javascript属于解释性语言，javascript的执行分为：解释和执行两个阶段，这两个阶段所做的事是不一样的
-
-**解释阶段：**
-- 词法分析
-- 语法分析
-- 作用域规则确定
-
-**执行阶段**
-- 创建执行上下文（也可以理解为执行前的“准备工作”）
-- 执行函数代码
-- 垃圾回收
-
-js解释阶段便会确定解释规则，因此作用域在函数定义时就已经确定了，而不是在函数调用时确定，但是执行上下文是在函数执行之前创建的
-执行上下文最明显的就是this的指向是执行时确定的，而作用域访问的变量是编写代码的结构确定的
-
-作用域和执行上下文之间最大的区别是：执行上下文在运行时确定，随时都可能改变；作用域在定义时确定，不会改变
-
-一个作用域下可能包含若干个上下文环境；也有可能从来没有上下文环境（函数未被调用执行）；也有可能有过，但是函数执行后，上下文环境被销毁了
-
-同一作用域下，不同的调用会产生不同的执行上下文环境，那么随着我们的执行上下文数量的增加，JS引擎又如何去管理这些执行上下文呢？这时便有了执行上下文栈。
