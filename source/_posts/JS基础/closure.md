@@ -7,7 +7,7 @@ top: 97
 
 ## 一、闭包的定义
 
-> 官方定义：
+> 官方定义：闭包是一个拥有许多变量和绑定了这些变量的环境的表达式（通常是一个函数），因而这些变量也是该表达式的一部分。
 
 > 闭包就是能够读取其他函数内部变量的函数。
 > 例如在javascript中，只有函数内部的子函数才能读取局部变量，所以闭包可以理解成“定义在一个函数内部的函数“。
@@ -26,6 +26,8 @@ top: 97
 
 闭包最大用处有两个：一个是可以读取函数内部的变量，另一个就是让这些变量的值始终保持在内存中。
 总之，`希望重用一个对象，但是又保护对象不被污染篡改时`，就需要使用闭包了。
+
+理解JavaScript的闭包是迈向高级JS程序员的必经之路，理解了其解释和运行机制才能写出更为安全和优雅的代码。
 
 ## 三、闭包的表现形式
 
@@ -133,7 +135,18 @@ for(var i=1;i<=5;i++){
     setTimeout(function timer(){
       console.log(j)
     },0)
-  })(i)
+  })(i) // 闭包必须存在对上一级词法作用域的引用
+}
+```
+
+如果像下面这样不把i传进去，是没用的（闭包必须存在对上一级词法作用域的引用）
+```js
+for(var i=1;i<=5;i++){
+  (function(){
+    setTimeout(function timer(){
+      console.log(i)
+    },0)
+  })()
 }
 ```
 
@@ -179,12 +192,11 @@ for(let i=1;i<=5;i++){
 
 这里的重点就在于，创建bar函数是在执行fn()时创建的。fn()早就执行结束了，但是fn()执行上下文环境还存在与栈中，因此bar(15)时，max可以查找到。如果fn()上下文环境销毁了，那么max就找不到了。
 
-`使用闭包会增加内容开销`，现在很明显了吧！
+`使用闭包会增加内容开销，消耗内存`，现在很明显了吧！
 
 ## 六、闭包形成的原因
 
 ```js
-var count = 10
 function add() {
   var count = 0
   return function() {
@@ -202,6 +214,63 @@ closure() // 2
 2. 在执行环境栈中首先加载浏览器主函数的调用，主函数引用着全局作用域对象window
 3. 定义变量
 
+![](../../assets/JS基础/closure-reason1.png)
+
+### 第二阶段
+1. 执行到var closure = add()这一行，add函数调用
+2. 为add函数创建活动对象AO
+3. window中的closure变量add函数返回的匿名函数的地址
+
+![](../../assets/JS基础/closure-reason2.png)
+
+### 第三阶段
+1. add()调用完之后出栈，本应该其对应的活动对象AO也随之消失。但是，closure指向匿名函数的地址，匿名函数的作用域还引用着活动对象AO。因此，add()上下文虽然出栈了，对其活动对象AO的引用也消失了，但因为其AO被匿名函数的scope拽着，所以无法释放，也无法回收
+
+![](../../assets/JS基础/closure-reason3.png)
+
+2. 所以形成了闭包-红色环
+
+![](../../assets/JS基础/closure-reason4.png)
+
+### 第四阶段
+
+1. closure()进栈，产生对应的活动对象AO，它的_parent_指向add()产生的活动对象
+2. closure()执行count++，向它的上一级作用域查找到count，count变成1，执行console
+
+![](../../assets/JS基础/closure-reason5.png)
+
+### 第五阶段
+1. closure()出栈，对应的AO对象释放
+2. 后两个closure()执行时和上一步一样一样的
 
 
-## 七、闭包的应用
+## 七、闭包的另一个例子
+```js
+function f1(){
+  var n = 999;
+  nAdd = function(){
+    console.log(n)
+    n+=1
+  }
+  function f2(){
+    console.log(n);
+  }
+  return f2;
+}
+
+var result = f1();
+result(); // 999
+nAdd(); // 999
+result(); // 1000
+nAdd(); // 1000
+result(); // 1001
+result(); // 1001
+var result2 = f1()
+result2() // 999
+result2() // 999
+nAdd(); // 999
+result(); // 1001
+```
+
+result实际上就是闭包f2函数，它一共运行了两次，第一次的值是999，第二次的值是1000
+这段代码中另一个值得注意的地方，就是“nAdd=function(){n+=1}”这一行，首先在nAdd前面没有使用var关键字，因此 nAdd是一个全局变量，而不是局部变量。其次，nAdd的值是一个匿名函数，它本身也是一个闭包，所以nAdd里的n还是999
