@@ -1,12 +1,13 @@
 ---
 title: h5对接微信支付
 category: 杂谈
-date: 2020-09-011 14:28
+date: 2020-09-11 14:28
 top: 99
 ---
 
-
 虽然是h5，但是细分有两种：微信内打开h5、浏览器打开h5，这两种h5对接两种微信支付方式
+如果 微信内打开h5 也使用 浏览器打开h5 调用微信支付的方式，微信会报错误页：请在微信外打开订单进行支付
+
 
 ## 浏览器h5
 
@@ -17,6 +18,7 @@ top: 99
 ## 微信内第三方h5 — JSAPI支付
 
 #### 1. jsApi支付需要先获取openid，所以需要先配置一些环境以支持获取
+
 openId是用户在当前公众号下的唯一标识
 
 > 扩展 unionId 一个商家如果有多个公众号，一个用户就会对应三个openid，但是一个用户在同一微信开放平台下的不同应用，unionid是相通的
@@ -46,7 +48,7 @@ openId是用户在当前公众号下的唯一标识
 
 ## 线下调试
 
-因为支付对安全要求比较高，所以访问支付的域名必须要和后台配置的某个域名一样（一般情况下就是线上域名，需要什么工商注册过的），所以线下就需要charles代理（建议关闭vue.config.js里的proxy代理）
+因为支付对安全要求比较高，所以访问支付的域名必须要和后台配置的某个域名一样（如果不一致，微信会报错误页）（一般情况下就是线上域名，需要什么工商注册过的），所以线下就需要charles代理（建议关闭vue.config.js里的proxy代理）
 此外，线下手机调试请用Vconsole，非常方便
 
 #### 1 配置代理
@@ -71,6 +73,7 @@ openId是用户在当前公众号下的唯一标识
 [网页获取openid](https://developers.weixin.qq.com/doc/offiaccount/OA_Web_Apps/Wechat_webpage_authorization.html)
 [授权开发步骤开发步骤](https://pay.weixin.qq.com/wiki/doc/api/jsapi.php?chapter=7_3)
 [微信内H5调起支付](https://pay.weixin.qq.com/wiki/doc/api/jsapi.php?chapter=7_7&index=6)
+[浏览器h5调用微信支付常见报错问题](https://pay.weixin.qq.com/wiki/doc/api/H5.php?chapter=15_4)
 
 ```js
 // 获取页面url的参数工具
