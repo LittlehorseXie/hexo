@@ -1,8 +1,8 @@
 ---
-title: Immutable
+title: 【为什么】要用Immutable
 category: Redux
 date: 2020-08-17 17:26
-top: 80
+top: 89
 ---
 
 在谈及 Immutable 数据之前，我们先来聊聊 React 组件是怎么渲染更新的。
