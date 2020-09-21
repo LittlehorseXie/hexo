@@ -20,15 +20,9 @@ top: 98
 
 
 
-
-
-
-
-
-
 ## Redux Promise又是干嘛的 - 遵从 FSA 标准的 promise 中间件
 
-## Redux ToolKit
+
 
 ## Redux Loop不是中间件
 
@@ -39,10 +33,5 @@ top: 98
 ## DVA
 
 
-
-## imuttable
-
-
-## Reselect
 
 

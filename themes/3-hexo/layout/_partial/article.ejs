@@ -9,13 +9,13 @@
         <% if (theme.author.on==true && post.author) {%>
         <span class="author"><a href="javascript:"><%=post.author %></a></span>
         <%}%>
-        <% if (post.categories && post.categories.length){ %>
+        <!-- <% if (post.categories && post.categories.length){ %>
         <span class="book">
             <% post.categories.forEach(function(category, i){ %>
                 <a href="javascript:" data-rel="<%=category.name%>"><%=category.name%></a><% if (i !== post.categories.length - 1) { %>/<% } %>
             <% }) %>
         </span>
-        <% } %>
+        <% } %> -->
         <% if (post.tags && post.tags.length){ %>
         <span class="tag">
             <% post.tags.forEach(function(tag, i){ %>
@@ -26,7 +26,7 @@
     </div>
     <div class="article-meta">
         <% if (post.date){ %>
-        创建时间: <time class="date" title='更新时间: <%= date(post.updated, 'YYYY-MM-DD HH:mm:ss')%>'><%= date(post.date, 'YYYY-MM-DD HH:mm') %></time>
+        创建时间: <time class="date" title='更新时间: <%= date(post.updated, 'YYYY-MM-DD')%>'><%= date(post.date, 'YYYY-MM-DD') %></time>
         <% } %>
     </div>
     <div class="article-meta">
