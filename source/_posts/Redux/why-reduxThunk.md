@@ -48,27 +48,11 @@ export function fetchPost(subreddit) {
 那个时候redux-thunk还没有独立，而是写在redux的 action 分发函数中的一个代码分支而已。和现在的redux-thunk逻辑一样，它会判断如果传入的 action 是一个function，就调用这个函数。现在将redux-thunk独立出去，用 middleware 的方式实现，会让 redux 的实现更加统一。
 
 
-### thunk源码
+## thunk的作用
 
-由于redux-thunk的代码量非常少，我们直接把它的代码贴上来看一下。这里我们看的是v2.3.0的代码：
-
-```js
-function createThunkMiddleware(extraArgument) {
-  return ({ dispatch, getState }) => next => action => {
-    if (typeof action === 'function') {
-      return action(dispatch, getState, extraArgument);
-    }
-
-    return next(action);
-  };
-}
-
-const thunk = createThunkMiddleware();
-thunk.withExtraArgument = createThunkMiddleware;
-
-export default thunk;
-```
-
-它的核心代码其实只有两行，就是判断每个经过它的action：如果是function类型，就调用这个function（并传入 dispatch 和 getState 及 extraArgument 为参数），而不是任由让它到达 reducer，因为 reducer 是个纯函数，Redux 规定到达 reducer 的 action 必须是一个 plain object 类型。
+- 无需引用store实例就可以和Redux store交互（比如使用dispatch和getState）
+- thunk帮我们从组件中移除一些复杂的逻辑
+- 从组件的角度来看，它不关心是dispatch了一个action object还是触发异步逻辑，他只关注dispatch(doSomething())然后继续往下走
+- Thunks能够返回promises
 
 

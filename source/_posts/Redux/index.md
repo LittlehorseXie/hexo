@@ -15,3 +15,8 @@ top: 999
 **what**：具体怎么实现的
 
 一一解析
+
+
+redux-saga中间件 封装了generator函数和redux-observable
+redux-observable 封装了 rxjs的observables
+Redux Toolkit封装了redux-thunk
