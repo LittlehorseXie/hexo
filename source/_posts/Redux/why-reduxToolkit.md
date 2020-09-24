@@ -53,7 +53,7 @@ npm install @reduxjs/toolkit
 yarn add @reduxjs/toolkit
 ```
 
-### configureStore()
+## configureStore()
 包装了 createStore 以提供简化的配置选项和良好的默认值，返回一个Redux store实例。它可以自动combine所有的slice reducers, 添加任何你需要的 Redux middleware , 默认包含了redux-thunk, 并启用 Redux DevTools 扩展.
 
 传统redux:
@@ -131,7 +131,7 @@ reducer: rootReducer也可以写成reducer: {
 }的形式，configureStore会自动调用combineReducers，此外，如果提供了middleware参数，configureStore就会只使用用户自己的赋值，如需添加rtk默认的，需要使用getDefaultMiddleware
 
 
-### createAction()
+## createAction()
 接收一个action type字符串，返回一个action creator函数. 函数本身已定义 toString, 因此它用来代替type constant （能把Constants和Actions文件合成一个）
 
 传统redux:
@@ -166,7 +166,7 @@ console.log(increment.type)
 // "INCREMENT"
 ```
 
-### createReducer()
+## createReducer()
 接收一个initial state对象，和一个lookup table对象，返回reducer。这个lookup table对象的key是action type（因此我们可以利用es6的计算属性来创建key，自动调用toString()，省去了手动调用.type），value是函数。
 此外, 它自动使用immer库使用户通过mutable的写法达到 immutable 更新的效果, 比如 state.todos[3].completed = true
 
@@ -195,8 +195,24 @@ const counterReducer = createReducer(0, {
 直接使用[increment]作为key，是因为它会默认调用increment.toString()，也就是会返回action type。需要注意的是 如果使用swicth语句不会自动执行toString，也就是直接使用 case increment: 是不行的，需要case increment.toString() 或 case increment.type
 也可以用传统的逻辑来写reducer，比如一些for循环、switch语句。最常规的写法就是判断action.type，然后做一些逻辑处理，返回一个新state。此外，一个reducer也会提供一个默认state
 
+此外，combineReducers里的Reducer引入方式稍有不同
+// 传统redux的reducer
+直接引用每个reducer文件的导出的reducer就行
+// rtk
+需要引用Slice导出的reducer
 
-### createSlice()
+然后就是触发action时，action type的不同了
+
+此外，最好不要使用connect传递的props. dispatch直接触发action，而是把action creators当做connect的第二个参数，直接通过props.actionCreator的方式触发
+
+We can also try completely switching from the "folder-by-type" structure to a "feature folder" structure, by moving all of the component files into the matching feature folders.
+* Remove unused action and reducer files
+* Consolidate components into feature folders
+
+Everyone has different preferences on what makes a "maintainable" folder structure, but overall that result looks pretty consistent and easy to follow.
+
+
+## createSlice()
 
 目前我们的代码长成这样：
 ```js
@@ -303,7 +319,7 @@ TOGGLE_TODO时，通过state.map的方式来实现状态更新
 ```js
 // 用rtk的方式写
 const todosSlice = createSlice({
-	name: ‘todos’,
+	name: 'todos',
 	initialState: [],
 	reducer: {
 		addTodo(state, action) { 
@@ -342,12 +358,192 @@ export default todosSlice.reducer
   }
 }
 ```
+用ts来表示的话，也就是：
+```js
+{
+  name : string,
+  reducer : ReducerFunction,
+  actions : Record<string, ActionCreator>,
+  caseReducers: Record<string, CaseReducer>
+}
+```
 
 需要注意的是：
 action type并不是一个单独的slice的独占值，每一个slice reducer拥有其自己的Redux state，但是，也能监听任意action type并适当更新其状态，例如 响应用户注销操作以回初始状态值
 如果两个模块尝试相互导入，JS 模块可能会出现"循环引用"问题。这可能导致导入未定义，可能会破坏需要该导入的代码。特别是在"duck"或slice的情况下，如果在两个不同的文件中定义的slice都希望响应另一个文件中定义的action，则可能会发生这种情况。
 
-### createAsyncThunk
+下面，我们看一下createSlice的完整传参：
+```js
+function createSlice({
+    // A name, used in action types
+    name: string,
+    // The initial state for the reducer
+    initialState: any,
+    // An object of "case reducers". Key names will be used to generate actions.
+    reducers: Object<string, ReducerFunction | ReducerAndPrepareObject>
+    // A "builder callback" function used to add more reducers, or
+    // an additional object of "case reducers", where the keys should be other
+    // action types
+    extraReducers?:
+    | Object<string, ReducerFunction>
+    | ((builder: ActionReducerMapBuilder<State>) => void)
+})
+```
+可以发现reducers object还可以接收ReducerAndPrepareObject作为value，我们通过代码就可以快速了解这是做什么的：
+```js
+import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import nanoid from 'nanoid'
+
+interface Item {
+  id: string
+  text: string
+}
+
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: [] as Item[],
+  reducers: {
+    addTodo: {
+      reducer: (state, action: PayloadAction<Item>) => {
+        // reducer 就是普通的 ReducerFunction
+        state.push(action.payload)
+      },
+      prepare: (text: string) => {
+        // prepare 可以帮我们准备 action的payload
+        const id = nanoid()
+        return { payload: { id, text } }
+      },
+    },
+  },
+})
+```
+
+我们还发现，createSlice还有一个参数是`extraReducers`。如上面所说，每个slice reducer都拥有其slice里的state，但有时，slice需要依赖其他slice的状态，并作出一些响应。这时extraReducers就派上用场了
+extraReducers里的action type，不会被当做slice.actions导出，也就是createSlice不会对extraReducers里的action type 调用 createAction 来自动创建action creators，它只会被当做一个slice reducer传到combineReducers里
+当一个action type既在reducers里也在extraReducers出现，会由reducers处理
+
+extraReducers的推荐使用方式是传入一个ActionReducerMapBuilder实例，`builder callback notation`也是唯一的方式来实现添加matcher reducer 和 default case reducer，并且它具有更好的TypeScript写法兼容
+
+extraReducers的另外的常见用处还在于，处理createAction和createAsyncThunk（下面会讲）产生的action
+
+具体使用方法如下：
+```js
+import { createAction, createSlice, Action, AnyAction } from '@reduxjs/toolkit'
+const incrementBy = createAction<number>('incrementBy')
+const decrement = createAction('decrement')
+
+interface RejectedAction extends Action {
+  error: Error
+}
+
+function isRejectedAction(action: AnyAction): action is RejectedAction {
+  return action.type.endsWith('rejected')
+}
+
+createSlice({
+  name: 'counter',
+  initialState: 0,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      // addCase 用来处理 一个确切的action type
+      .addCase(incrementBy, (state, action) => {
+        // action is inferred correctly here if using TS
+      })
+      // 直接链式调用即可
+      .addCase(decrement, (state, action) => {})
+      // addMatcher 用来处理 match匹配一系列action type
+      .addMatcher(
+        isRejectedAction,
+        // `action` will be inferred as a RejectedAction due to isRejectedAction being defined as a type guard
+        (state, action) => {}
+      )
+      // 可以声明一个defaultcase来处理没有匹配到的action
+      .addDefaultCase((state, action) => {})
+  },
+})
+```
+除了builder callback notation的方式，还可以使用map object notation的方式来写extraReducers，也就是最常见的写reducers的方式。这时你需要使用actionCreator.type 或者 actionCreator.toString()来写ts
+代码如下：
+
+```js
+const incrementBy = createAction('incrementBy')
+
+createSlice({
+  name: 'counter',
+  initialState: 0,
+  reducers: {},
+  extraReducers: {
+    [incrementBy]: (state, action) => {
+      return state + action.payload
+    },
+    'some/other/action': (state, action) => {}
+  }
+})
+```
+
+此外，actions有时需要传递一些data，此时应遵循Flux Standard Action-FSA标准，使action更规范、易读，即 把data放在payload里。
+FSA标准：一个action是一个对象，必须有一个type（字符串）属性，可能有payload（任何类型） error（如果 action 的 error 属性是 true，则该 action 实际上表示对 Promise 进行 rejected，并且 payload 属性的值应当是一个错误对象） meta（任何类型，它旨在用于不属于 payload 的额外信息）属性，不能有其他属性
+
+那么如何在rtk中添加带payload的action呢？createAction和createSlice都支持：
+
+// createAction需要使用第二个参数
+```js
+let nextTodoId = 0
+const addTodo = createAction('ADD_TODO', text => {
+  return {
+    payload: { id: nextTodoId++, text }
+  }
+})
+```
+注意：必须返回一个有payload属性的对象
+
+// createSlice需要把reducers里之前action type对应的value，从reducer function变为一个对象，这个对象的reducer是之前的reducer function，prepare相当于payload
+```js
+let nextTodoId = 0
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: [],
+  reducers: {
+    addTodo: {
+      reducer(state, action) {
+        const { id, text } = action.payload
+        state.push({ id, text, completed: false })
+      },
+      prepare(text) {
+        return { payload: { text, id: nextTodoId++ } }
+      }
+    }
+  }
+}
+```
+// 如使用typescript，需要给initialState和action声明类型
+// action类型需要使用@reduxjs/toolkit里的PayloadAction<PayloadType>
+```js
+interface IAddToDo {
+	id?: number,
+	text: string
+}
+setAState(state, action: PayloadAction<IAddToDo>) 
+```
+// 不需要再给上面代码的state赋类型，因为createSlice已经知道它和initialState的类型一样
+
+
+// 单元测试
+```js
+describe('addTodo', () => {
+  it('should generate incrementing todo IDs', () => {
+    const action1 = addTodo('a')
+    const action2 = addTodo('b')
+
+    expect(action1.payload).toEqual({ id: 0, text: 'a' })
+    expect(action2.payload).toEqual({ id: 1, text: 'b' })
+  })
+})
+```
+
+
+## createAsyncThunk
 接收一个action type字符和一个返回promise的函数, 生成一个基于这个promise触发pending/fulfilled/rejected action types 的 thunk 
 
 当我们想要把异步请求的逻辑和UI组件分开时，或者额外的逻辑进行多次dispatch或getState时，我们就需要用到thunk
@@ -391,6 +587,25 @@ const fetchUsers = () => async dispatch => {
 ```
 这样在请求数据的时候直接dispatch(fetchUsers())就可以了
 
+如果用到了typescript，我们还需要声明thunk action的类型
+```js
+import { configureStore, Action } from '@reduxjs/toolkit'
+import { ThunkAction } from 'redux-thunk'
+import rootReducer, { RootState } from './rootReducer'
+
+export type AppDispatch = typeof store.dispatch
+export type AppThunk = ThunkAction<void, RootState, unknown, Action<string>>
+
+const fetchUsers = (): AppThunk  => async dispatch => {...}
+```
+
+thunk被进行了一些改造：
+- thunk没有return任何东西
+- getState的state类型，是RootState的类型
+- 可以自定义 thunk 中间件以传递额外的值
+- dispatch能接收任何type是字符串的action
+
+
 除此之外，redux官方建议在请求异步数据时，做到以下步骤：
 - 请求数据前，触发start action，以实现一些loading效果
 - 请求数据
@@ -420,6 +635,39 @@ const fetchIssuesCount = (org, repo) => async dispatch => {
   }
 }
 ```
+
+需要关注的是：
+thunk目前虽然和slice在一个文件里，但其实是相互独立的声明，因为目前RTK没有将thunk定义为slice相关的特殊语法
+thunk action creator是一个箭头函数，并且是AppThunk的类型
+我们使用 thunk 函数本身的async/await 语法。这不是必需的，但async/await通常会比嵌套Promise.then() 更简洁
+在thunk中，我们dispatch slice里创建的plain action creators
+
+上面的错误处理还有一些问题
+上面的try/catch能够捕获getRepoDetails时的报错，但也能捕获dispatch getRepoDetailsSuccess时的错误信息，这两种方式引发的错误捕获，都会触发dispatch getRepoDetailsFailed，这显然不太合理
+
+为了解决上面的问题，我们可以通过promise来解决
+```js
+getRepoDetails(org, repo).then(
+  // success callback
+  repoDetails => dispatch(getRepoDetailsSuccess(repoDetails)),
+  // error callback
+  err => dispatch(getRepoDetailsFailed(err.toString()))
+)
+```
+也可以改进一下try/catch包裹
+```js
+ let repoDetails
+  try {
+    repoDetails = await getRepoDetails(org, repo)
+  } catch (err) {
+    dispatch(getRepoDetailsFailed(err.toString()))
+    return
+  }
+  dispatch(getRepoDetailsSuccess(repoDetails))
+}
+```
+此外，还有几个有意思的地方：
+start fetching和fetch failed的逻辑在很多地方都需要，因此我们可以把这个逻辑提炼出来，在需要的地方重用
 
 createAsyncThunk抽象了这个模式，以自动触发这些操作
 
@@ -456,16 +704,26 @@ const usersSlice = createSlice({
 dispatch(fetchUserById(123))
 ```
 
-### createEntityAdapter
+## createEntityAdapter
 生成一组可重用的 reducers 和 selectors 以便管理store里的 规范化数据
 
-### createSelector 
+参考：
+https://www.redux.org.cn/docs/recipes/reducers/NormalizingStateShape.html
+https://redux-toolkit.js.org/usage/usage-guide#managing-normalized-data
+
+## createSelector 
 直接从Reselect 库中导出的
 
+除以上api，rtk还导出了一些它内部使用到的工具函数，比如：
 
-TODO
-如何使用完成后，再用自己的理解更新一遍api解释
-
+nanoid：生成非加密安全的随机 ID 字符串。用于 createAsyncThunk 请求 ID时自动调用，但也可能适用于其他情况。
+createNextState：从immer库中导出
+current：从immer库中导出，生成当前状态的一份快照，在调试时经常用到，比如在reducer中console.log(current(state))
+combineReducers：从redux中导出
+compose：从redux中导出
+bindActionCreators：从redux中导出
+createStore：从redux中导出
+applyMiddleware：从redux中导出
 
 ## 总的来说
 
@@ -474,8 +732,12 @@ TODO
 React组件可能使用“container / presentational”模式的严格版本编写，其中“ presentational”组件位于一个文件夹中，而Redux“ container”连接定义位于另一个文件夹中
 有些代码未遵循某些推荐的Redux“最佳实践”模式
 
-redux-toolkit:
 
+## 一些注意点
+Rtk使用Mutable的方式来处理数据，其内部自动使用了immer，但在普通redux时这么使用是不可的
+slice导出的action type、reducer最好约束好明明规范，让大家一眼就能看出这是个action、这是个reducer。同理还有type interface声明。这点reselect可以直接规范为selectX
+也可以借助react hooks — useDispatch useSelector来辅助redux使用，以代替connect 和 mapDispatch的用法
+Redux-toolkit只是结合了一些“最佳实践”，而不是一个redux中间件（当然了，从api能看出来，没有中间件是可以直接涉及store创建的；此外，从它能干这么多事也能看出来，理论上一个中间件应该只做一件事）
 
 
 
