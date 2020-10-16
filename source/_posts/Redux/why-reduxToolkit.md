@@ -5,30 +5,28 @@ date: 2020-07-30 14:29
 top: 97
 ---
 
-使用常规redux：
-创建store
-Constants 声明 action type
-Actions 声明 action creator，需要引用 Constants
-Reducers 用于放拆分后的子 reducer，需要引用 Constants，各种switch来判断action type
-Selectors 用于取某个 redux state 的值
-tsx 文件需要引用Actions、Selectors
-此外，还有创建 Services 声明 api 调用
+通常情况下，我们使用常规redux来管理数据的话，需要经过以下步骤：
+- 创建store
+- Constants 声明 action type
+- Actions 声明 action creator，需要引用 Constants
+- Reducers 用于放拆分后的子 reducer，需要引用 Constants，各种switch来判断action type
+- Selectors 用于取某个 redux state 的值
+- tsx 文件需要引用Actions、Selectors
+- 此外，还有创建 Services 声明 api 调用
 
 光是看这些个英文单词，就觉得很繁琐了
 redux核心库让我们来决定如何处理所有事情，比如store的启动、state里都包含什么、如何构建你的reducers
-在某些场景，这是好的，因为它给我们提供了灵活性。但有时，我们只想用最简单的方式开始，有一些好的默认行为开箱即用。或许，你正在编写一个很大的应用程序，发现自己总是会写一些相似的代码，这时你想减少手写的代码量。
+在某些场景，这是好的，因为它给我们提供了灵活性。但有时，我们只想用最简单的方式开始，有一些好的默认行为开箱即用。或许，你正在编写一个很大的应用程序，已经发现自己总是会写一些相似的代码，这时你想减少手写的代码量。
 
 Redux Toolkit
 就是帮我们来简化redux代码的。它并不是一个完整的解决方案，但它会使和Redux相关的代码变得更简单
 
-
-Redux Toolkit
-是mobx 作者的另一个优秀作品，让我们可以用 mutable 的写法处理 state，但是最后还是 immutable 的更新
+rtk 是 mobx 作者的另一个优秀作品，让我们可以用 mutable 的写法处理 state，但是最后还是 immutable 的更新
 集成了redux、redux-thunk、immer、reselect等工具
 
-Redux Toolkit
-并不会改变redux的工作原理，我们仍创建一个Redux store，触发action的方式来描述“发生了什么”，并且通过reducer函数返回新的更新后的state
+rtk 并不会改变redux的工作原理，我们仍创建一个Redux store，触发action的方式来描述“发生了什么”，并且通过reducer函数返回新的更新后的state
 
+rtk 有利于所有 Redux 用户。无论您是设置第一个项目的 Redux 用户，还是希望简化现有应用程序的有经验的用户，Redux toolkit都可以帮助您更好的写 Redux 代码。
 
 
 ## 目的
@@ -40,8 +38,6 @@ Redux toolkit旨在成为编写redux逻辑的标准方式，它起初是为了�
 
 我们不能解决所有的case，像create-react-app一样，我们可以提供一些工具，解决一些常见的问题，简化用户代码
 因此，toolkit小心的限制了这个范围，它并不涉及数据缓存、文件夹或文件结构、可重用封装的Redux module
-
-toolkit有利于所有 Redux 用户。无论您是设置第一个项目的 Redux 用户，还是希望简化现有应用程序的有经验的用户，Redux toolkit都可以帮助您更好的写 Redux 代码。
 
 
 ## 暴露的api
