@@ -7,7 +7,7 @@ top: 91
 
 ## 使用
 
-执行`git cz`进入interactive模式
+执行`git cz`进入interactive模式，也可以直接`git commit -m "type(scope): subject"`
 
 生成的commit message格式如下：
 ```
