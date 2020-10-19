@@ -29,7 +29,7 @@ module.exports = {
   // override the messages, defaults are as follows
   messages: {
     type: "选择要提交的更改类型:",
-    scope: '选择更改影响的范围（可选）:',
+    scope: '相关需求名称为:',
     // used if allowCustomScopes is true
     customScope: '更改内容的所属需求为:',
     subject: '写一个简短、命令时态的语句来描述更改:\n',
@@ -39,7 +39,7 @@ module.exports = {
     confirmCommit: '确定提交上面的更改?',
   },
 
-  allowCustomScopes: true,
+  // allowCustomScopes: true,
   allowBreakingChanges: ['feat', 'fix'],
   // skip any questions you want
   skipQuestions: ['body', 'breaking', 'footer'],
