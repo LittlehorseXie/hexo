@@ -1,12 +1,12 @@
 module.exports = {
   types: [
-    { value: 'feat', name: 'feat:     新功能' },
-    { value: 'fix', name: 'fix:      bug修复' },
+    // { value: 'feat', name: 'feat:     新功能' },
+    // { value: 'fix', name: 'fix:      bug修复' },
     { value: 'docs', name: 'docs:     更新文档' },
     { value: 'style', name: 'style:    修改主题样式' },
-    { value: 'refactor', name: 'refactor: 重构' },
-    { value: 'perf', name: 'perf:     性能提升' },
-    { value: 'chore', name: 'chore:    修改辅助工具' },
+    // { value: 'refactor', name: 'refactor: 重构' },
+    // { value: 'perf', name: 'perf:     性能提升' },
+    // { value: 'chore', name: 'chore:    修改辅助工具' },
     { value: 'revert', name: 'revert:   回滚commit' },
   ],
 
@@ -31,7 +31,7 @@ module.exports = {
     type: "选择要提交的更改类型:",
     scope: '相关需求名称为:',
     // used if allowCustomScopes is true
-    customScope: '更改内容的所属需求为:',
+    customScope: '更改内容为:',
     subject: '写一个简短、命令时态的语句来描述更改:\n',
     body: '详细描述更改原因 (可选，按回车跳过). 使用 "|" 来换行:\n',
     breaking: '列出 BREAKING CHANGES (optional):\n',
@@ -40,9 +40,9 @@ module.exports = {
   },
 
   // allowCustomScopes: true,
-  allowBreakingChanges: ['feat', 'fix'],
+  // allowBreakingChanges: ['feat', 'fix'],
   // skip any questions you want
-  skipQuestions: ['body', 'breaking', 'footer'],
+  skipQuestions: ['scope', 'body', 'breaking', 'footer'],
 
   // limit subject length
   subjectLimit: 50,
