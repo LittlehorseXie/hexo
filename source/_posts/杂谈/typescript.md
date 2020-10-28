@@ -1,0 +1,391 @@
+---
+title: typescript使用
+category: 杂谈
+date: 2020-10-28
+top: 91
+---
+
+## typescript定位
+
+- JavaScript 的超集
+- 编译期行为
+- 不改变运行时行为
+- 始终与 ESMAScript 语言标准一致 (stage 3 语法)
+- 提供约束
+
+> TypeScript中的Decorator较为特殊，为Angular团队和TypeScript团队交易的结果，有兴趣可自行搜索相关资料。。而且近期 EcmaScript 规范中的 decorator 提案内容发生了剧烈变动，建议等此语法标准完全稳定后再在生产项目中使用。
+
+## typescript内置类型
+
+### Partial
+将类型 T 的所有属性标记为可选属性
+```ts
+type Partial<T> = {
+    [P in keyof T]?: T[P];
+};
+```
+使用场景：
+```ts
+// 账号属性
+interface AccountInfo {
+    name: string 
+    email: string 
+    age: number 
+    vip: 0|1 // 1 是vip ，0 是非vip
+}
+
+// 当我们需要渲染一个账号表格时，我们需要定义
+const accountList: AccountInfo[] = []
+
+// 但当我们需要查询过滤账号信息，需要通过表单，
+// 但明显我们可能并不一定需要用到所有属性进行搜索，此时可以定义
+const model: Partial<AccountInfo> = {
+  name: '',
+  vip: undefind
+}
+```
+
+### Required
+与 Partial 相反，Required 将类型 T 的所有属性标记为必选属性。
+```ts
+type Required<T> = {
+    [P in keyof T]: T[P];
+};
+```
+
+### Readonly
+将所有属性标记为 readonly, 即不能修改。
+```ts
+type Readonly<T> = {
+    readonly [P in keyof T]-?: T[P];
+};
+```
+
+### Pick<T, K>
+从 T 中过滤出属性 K
+```ts
+type Pick<T, K extends keyof T> = {
+    [P in K]: T[P];
+};
+```
+使用场景:
+```ts
+interface AccountInfo {
+  name: string 
+  email: string 
+  age: number 
+  vip?: 0|1 // 1 是vip ，0 是非vip
+}
+
+type CoreInfo = Pick<AccountInfo, 'name' | 'email'>
+/* 
+{ 
+  name: string
+  email: stirng
+}
+*/
+```
+
+### Record<K, T>
+标记对象的 key value类型
+```ts
+type Record<K extends keyof any, T> = {
+    [P in K]: T;
+};
+```
+
+使用场景:
+
+```ts
+// 定义 学号(key)-账号信息(value) 的对象
+const accountMap: Record<number, AccountInfo> = {
+  10001: {
+    name: 'xx',
+    email: 'xxxxx',
+    // ...
+  }    
+}
+const user: Record<'name'|'email', string> = {
+    name: '', 
+    email: ''
+}
+// 复杂点的类型推断
+function mapObject<K extends string | number, T, U>(obj: Record<K, T>, f: (x: T) => U): Record<K, U>
+
+const names = { foo: "hello", bar: "world", baz: "bye" };
+// 此处推断 K, T 值为 string , U 为 number
+const lengths = mapObject(names, s => s.length);  // { foo: number, bar: number, baz: number }
+```
+
+### Exclude<T, U>，Omit<T, K>
+移除 T 中的 U 属性
+```ts
+type Exclude<T, U> = T extends U ? never : T;
+```
+使用场景：
+```ts
+// 'a' | 'd'
+type A = Exclude<'a'|'b'|'c'|'d' ,'b'|'c'|'e' >  
+// 乍一看好像这个没啥卵用，但是，我们通过一番操作，之后就可以得到 Pick 的反操作：
+type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>
+
+type NonCoreInfo = Omit<AccountInfo, 'name' | 'email'>
+/*
+{
+  age: number 
+  vip: 0|1,
+}
+*/
+```
+
+### Extract<T, U>
+Exclude 的反操作，取 T，U两者的交集属性。
+
+```ts
+type Extract<T, U> = T extends U ? T : never;
+```
+
+使用 demo：
+
+```ts
+// 'b'|'c'
+type A = Extract<'a'|'b'|'c'|'d' ,'b'|'c'|'e' >  
+```
+
+### NonNullable
+排除类型 T 的 null | undefined 属性
+```ts
+type NonNullable<T> = T extends null | undefined ? never : T;
+```
+使用 demo
+```ts
+type A = string | number | undefined 
+type B = NonNullable<A> // string | number
+
+function f2<T extends string | undefined>(x: T, y: NonNullable<T>) {
+    let s1: string = x;  // Error, x 可能为 undefined
+    let s2: string = y;  // Ok
+}
+```
+
+### Parameters
+获取一个函数的所有参数类型
+```ts
+// 此处使用 infer P 将函数参数定为待推断类型
+// T 符合函数特征时，返回参数类型，否则返回 never
+type Parameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? P : never;
+```
+使用demo:
+```ts
+interface IFunc {
+  (person: IPerson, count: number): boolean
+}
+
+type P = Parameters<IFunc> // [IPerson, number]
+
+const person01: P[0] = {
+  // ...
+}
+```
+另一种使用场景是，快速获取未知函数的参数类型：
+```ts
+import {somefun} from 'somelib'
+// 从其他库导入的一个函数，获取其参数类型
+type SomeFuncParams = Parameters<typeof somefun>
+
+// 内置函数
+// [any, number?, number?]
+type FillParams = Parameters<typeof Array.prototype.fill>
+```
+
+### ConstructorParameters
+类似于 Parameters<T>, ConstructorParameters 获取一个类的构造函数参数
+```ts
+type ConstructorParameters<T extends new (...args: any) => any> = T extends new (...args: infer P) => any ? P : never;
+```
+使用 demo:
+```ts
+// string | number | Date 
+type DateConstrParams = ConstructorParameters<typeof Date>
+```
+
+### ReturnType
+获取函数类型的返回类型
+```ts
+type ReturnType<T extends (...args: any) => any> = T extends (...args: any) => infer R ? R : any;
+```
+使用方式和 Parameters<T> 类似，不再赘述
+
+### InstanceType
+获取一个类的返回类型
+```ts
+type InstanceType<T extends new (...args: any) => any> = T extends new (...args: any) => infer R ? R : any;
+```
+使用方式和 ConstructorParameters<T> 类似，不再赘述
+
+
+## 一些关键字
+
+### never
+never 是 | 运算的幺元，即 x | never = x。例如之前的 Exclude<Result, string> 运算过程如下：
+
+![](../../assets/杂谈/typescript1.png)
+
+### infer
+infer的作用是让TypeScript自己推断，并将推断的结果存储到一个临时名字中，并且只能用于extends语句中。它与泛型的区别在于，泛型是声明一个“参数”，而infer是声明一个“中间变量”
+
+具体应用可以见 Parameters 或 练习2
+
+### typeof
+用于获取一个“常量”的类型，这里的“常量”是指任何可以在编译期确定的东西，例如const、function、class等。它是从 实际运行代码  通向 类型系统 的单行道。理论上，任何运行时的符号名想要为类型系统所用，都要加上 typeof。但是class 比较特殊不需要加，因为 ts 的 class 出现得比 js 早，现有的为兼容性解决方案。
+
+```ts
+const config = { width: 2 }
+function getLen(str: string) { return str.length }
+
+type TConfig = typeof config // {width: number}
+type TGetLen = typeof getLen // (str: string) => number
+```
+
+### extends
+
+extends 本意为 “拓展”，也有人称其为 “继承”。在 TypeScript 中，extends 既可当作一个动词来扩展已有类型；也可当作一个形容词来对类型进行条件限定（例如用在泛型中）。在扩展已有类型时，不可以进行类型冲突的覆盖操作。例如，基类型中键 a 为 string，在扩展出的类型中无法将其改为 number。
+
+
+## 泛型是什么
+
+类型实际上可以进行一定的运算，要想写出的类型适用范围更广，不妨让它像函数一样可以接受参数。TS 的泛型便是起到这样的作用，你可以把它当作类型的参数。它和函数参数一样，可以有默认值。除此之外，还可以用 extends 对参数本身需要满足的条件进行限制。
+
+在定义一个函数、type、interface、class 时，在名称后面加上<> 表示即接受类型参数。而在实际调用时，不一定需要手动传入类型参数，TS 往往能自行推断出来。在 TS 推断不准时，再手动传入参数来纠正。
+
+```ts
+// 定义
+class React.Component<P = {}, S = {}, SS = any> { ... }
+interface IShowConfig<P extends IShowProps> { ... }
+// 调用
+class Modal extends React.Component<IModalProps, IModalState> { ... }
+```
+
+在定义泛型后，有两种方式使用，一种是传入泛型类型，另一种使用类型推断，即编译器根据其他参数类型来推断泛型类型。简单示例如下：
+```ts
+declare function fn<T>(arg: T): T; // 定义一个泛型函数
+
+const fn1 = fn<string>('hello');  // 第一种方式，传入泛型类型 string
+const fn2 = fn(1); // 第二种方式，从参数 arg 传入的类型 number，来推断出泛型 T 的类型是 number
+```
+
+## declare
+在实际应用开发时有一种场景，当前作用域下可以访问某个变量，但这个变量并不由开发者控制。例如通过 Script 标签直接引入的第三方库 CDN、一些宿主环境的 API 等。这个时候可以利用 TS 的环境声明功能，来告诉 TS 当前作用域可以访问这些变量，以获得类型提醒。
+
+具体有两种方式，declare 和三斜线指令。
+```ts
+declare const IS_MOBILE = true;    // 编译后此行消失
+const wording = IS_MOBILE ? '移动端' : 'PC端';
+```
+
+用三斜线指令可以一次性引入整个类型声明文件。
+```ts
+/// <reference path="../typings/monaco.d.ts" />
+const range = new monaco.Range(2, 3, 6, 7);
+```
+
+## interface 和 type
+
+interface 和 type 两个关键字因为其功能比较接近，常常引起新手的疑问：应该在什么时候用 type，什么时候用 interface？
+interface 的特点如下：
+
+- 同名 interface 自动聚合，也可以和已有的同名 class 聚合，适合做 polyfill
+- 自身只能表示 object/class/function 的类型
+
+建议库的开发者所提供的公共 api 应该尽量用 interface/class，方便使用者自行扩展。
+
+与 interface 相比，type 的特点如下：
+
+- 表达功能更强大，不局限于 object/class/function
+- 要扩展已有 type 需要创建新 type，不可以重名
+- 支持更复杂的类型操作
+
+
+## 练习
+
+### 1. 提取一个object的function key
+
+如何得到 'c' | 'd' ？ 
+```ts
+interface SomeProps {
+    a: string
+    b: number
+    c: (e: MouseEvent) => void
+    d: (e: TouchEvent) => void
+}
+```
+解答：
+```ts
+type TGetFuncKeys<T> = {
+  [K in keyof T]: T[K] extends Function ? K : never
+}[keyof T]
+type FuncKeys = TGetFuncKeys<SomeProps> // 'c' | 'd'
+```
+这里的运算过程如下：
+```js
+// 开始
+{
+  a: string,
+  b: number,
+  c: (e: MouseEvent) => void,
+  d: (e: TouchEvent) => void
+}
+// 第一步，条件映射
+{
+  a: never,
+  b: never,
+  c: 'c',
+  d: 'd'
+}
+// 第二步，索引取值
+never | never | 'c' | 'd'
+// never的性质
+'c' | 'd'
+```
+
+### 2. tuple 转 union
+
+```ts
+typeof TTuple = [string, number]
+
+typeof ElementOf<T> = T extends Array<infer P> ? P : never
+typeof TUnion = ElementOf<TTuple>
+```
+
+### 3. 从输入输出推断函数类型
+假设现在有一个这样的类型：
+```ts
+interface Module {
+  count: number;
+  message: string;
+  asyncMethod<T, U>(input: Promise<T>): Promise<Action<U>>;
+  syncMethod<T, U>(action: Action<T>): Action<U>;
+}
+```
+经过connect之后，返回的值类型为：
+```ts
+interface Result {
+  asyncMethod<T, U>(input: T): Action<U>;
+  syncMethod<T, U>(action: T): Action<U>;
+}
+```
+其中Action<T>的定义为
+```ts
+interface Action<T> {
+  payload?: T,
+  type: string
+}
+```
+推测connect的类型
+
+```ts
+type FuncName<T> = {
+  [K in typeof T]: T[K] extends Function ? K : never
+}[keyof T]
+type Connect = (module: Module) => { [T in keyof FuncName]: Module<T> }
+```
