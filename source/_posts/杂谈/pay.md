@@ -107,3 +107,45 @@ window.WeixinJSBridge.invoke(
   }
 );
 ```
+
+### 问题1
+
+**问题描述：**
+因为h5可能在微信和手机浏览器打开，所以需要统一链接或二维码，而现在微信h5的配置是open.weixin.qq.com....
+
+**解决方案：**
+判断当前是微信浏览器，且链接里没有code，且localstorage里没有openid时，自动跳转到下面链接
+```js
+window.location.href = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=wx797efa46dbb71afa&redirect_uri=${window.location.href}&response_type=code&scope=snsapi_base&state=1#wechat_redirect`
+```
+
+
+### 问题2
+
+**问题描述：**
+用户在微信内手动刷新支付页之后点支付，页面报错
+![](../../assets/杂谈/wxPay3.png)
+
+**问题原因：**
+报错直接原因：获取prepay信息的时候，没给后端传openid
+缺失openid原因：前端使用window.WeixinJSBridge来判断是否是微信浏览器，判断为微信浏览器才会传openid，但有时页面刷新后微信会获取不到WeixinJSBridge，导致虽然理论上是微信浏览器，但判断为了不是
+缺失WeixinJSBridge原因：如下图 来自[微信开放社区](https://developers.weixin.qq.com/community/develop/doc/00086260ecc9e0efd22b8ebd451800?highLine=WeixinJSBridge)
+
+![](../../assets/杂谈/wxPay1.png)
+![2020.11.4截图](../../assets/杂谈/wxPay2.png)
+
+**解决方案：**
+
+1. 统一用以下方式判断是否为微信浏览器
+```js
+function isWX() {
+  const ua = window.navigator.userAgent.toLowerCase();
+  if (ua.includes('micromessenger')) {
+    return true; // 是微信端
+  }
+  return false;
+}
+```
+2. 跳转支付页统一改为`window.location.href=xxx`，弃用`router.push`
+3. 上面跳转方式的修改可能会导致一些数据保存的问题，需要留意一下
+
