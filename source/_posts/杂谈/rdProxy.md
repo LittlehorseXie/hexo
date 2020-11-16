@@ -78,7 +78,7 @@ watch('./scripts/proxy.js', { recursive: true }, () => {
     const { dev } = require('./proxy.js');
     const idx = proxyClear();  // 记录符合条件的中间件的最小下标，且删除这些中间件
     proxyTo(dev); // 添加中间件
-    isNumber(idx) && proxyClear(idx); // 从最后一个符合条件的中间件 把它添加到idx坐标上
+    proxyClear(idx); // 从最后一个符合条件的中间件 把它添加到idx坐标上
     console.log('\n重启proxy完成.\n');
   } catch (error) {
     console.log('\n重启出错，请查看proxy.js 解决文件冲突! \n');
