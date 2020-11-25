@@ -2,7 +2,7 @@
 title: typescript使用
 category: 杂谈
 date: 2020-10-28
-top: 91
+top: 94
 ---
 
 ## typescript定位
