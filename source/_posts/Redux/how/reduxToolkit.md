@@ -58,6 +58,9 @@ import {
   createAsyncThunk,
 } from '@reduxjs/toolkit';
 
+import { notification } from 'antd'
+import { showDownloadListModal } from 'containers/Main/actions'
+
 /**
  * @description: 创建异步的Thunk生成器，会根据actionName自动寻找对应的service触发；
  * @return: async thunk
@@ -91,9 +94,12 @@ export const createAsyncThunkCreator = (nameSpace: string, services: IParams) =>
   throw new Error(`Can not find ${actionName}Service`);
 };
 
-export const createServiceAsyncThunkCreator = (nameSpace: string, services: IParams) => (actionName: string, service?: any) => {
-  const asyncService = service || services[`${actionName}Service`];
+export const createServiceAsyncThunkCreator = (nameSpace: string, services: IParams) => (actionName: string, options?: {service?: any, isDownLoad?: boolean}) => {
+  const asyncService = options?.service || services[`${actionName}Service`];
   if (asyncService) {
+    if (options?.isDownLoad) {
+      return createDownloadServiceAsyncThunk(`${nameSpace}/${actionName}`, async (params: any) => asyncService(params))
+    }
     return createServiceAsyncThunk(`${nameSpace}/${actionName}`, async (params: any) => asyncService(params))
   }
   throw new Error(`Can not find ${actionName}Service`);
@@ -103,10 +109,56 @@ export function createServiceAsyncThunk<ThunkArg = null, Returned = null>(typePr
   return createAsyncThunk(
     typePrefix,
     async (params: ThunkArg, { rejectWithValue }) => {
-      const res = await payloadCreator(params);
-      if (res.errno !== 0) {
+      let res;
+      try {
+        res = await payloadCreator(params);    
+      } catch (error) {
+        notification.error({
+          message: '网络错误，请稍后再试',
+        });
+      }
+      if (res.errno) {
+        notification.error({
+          message: res.errmsg || '请求错误，请稍后再试',
+        });
         return rejectWithValue(res);
       }
+      return res;
+    },
+  );
+}
+
+export function createDownloadServiceAsyncThunk<ThunkArg = null, Returned = null>(typePrefix: string, payloadCreator: (params: ThunkArg) => Promise<IResponseData<Returned>>) {
+  return createAsyncThunk(
+    typePrefix,
+    async (params: ThunkArg, { rejectWithValue, dispatch }) => {
+      let res: any;
+      try {
+        res = await payloadCreator(params);    
+      } catch (error) {
+        notification.error({
+          message: '网络错误，请稍后再试',
+        });
+      }
+      if (res.errno) {
+        notification.error({
+          message: res.errmsg || '请求错误，请稍后再试',
+        });
+        return rejectWithValue(res);
+      }
+      if (res.data === -1) {
+        notification.warn({
+          message: '已存在下载任务，请下载完成后操作',
+        });
+      } else {
+        notification.success({
+          message: '下载任务添加成功',
+        });
+      }
+      // 延时弹出下载框，保证 数据导出 的请求先于 下载列表 的请求到达后端服务器
+      setTimeout(() => {
+        dispatch(showDownloadListModal())
+      }, 100)
       return res;
     },
   );
@@ -188,11 +240,16 @@ const slice = createSlice({
     }
   },
   extraReducers: {
+    [getDataList.pending.type]: (state, action) => {
+      state.tableLoading = true
+    },
     [getDataList.fulfilled.type]: (state, action) => { // 异步请求-成功态
+      state.tableLoading = false
       state.tableData = action.payload?.data?.list;
       state.pagination.total = action.payload?.data?.total;
     },
     [getDataList.rejected.type]: (state, action) => { // 异步请求-失败态
+      state.tableLoading = false
       state.pagination = initialState.pagination
       state.tableData = initialState.tableData
     },
@@ -304,5 +361,63 @@ export default compose(
 	),
 	Form.create(),
 )(XXXPage)
+```
+
+
+## 自动创建updateReducer
+### 1. utils/reducersFactory.tsx
+```js
+import { PayloadAction } from '@reduxjs/toolkit'
+
+export default function<T>(initialState: T) {
+  try {
+    const stateKeys = Object.keys(initialState)
+    const reducersMap: any = {};
+
+    (stateKeys as Array<keyof T>).forEach((key: (keyof T)) => {
+      const mapKey = 'update' + key.charAt(0).toLocaleUpperCase().concat(key.slice(1))
+      reducersMap[mapKey] = (state: T, action: PayloadAction<any>) => {
+        state[key] = action.payload
+      }
+    })
+    return reducersMap
+  } catch(e) {
+    console.log('selectorsFactory Error: ', e)
+    return {}
+  }
+}
+```
+
+### 2. pages/xxx/slice.tsx
+
+```js
+import reducersFactory from 'utils/reducersFactory'
+const normalReducers = reducersFactory(initialState)
+
+const slice = createSlice({
+  reducers: {
+    ...normalReducers,
+  }
+})
+```
+## 注意
+
+当有报错时，utils/asyncReduux 自动触发 notification.error，请勿重复手动触发
+
+通过res判断是否正常返回时，通过`!res.error`判断，而不是`!res.errno`。因为网络错误或有errno时，返回的对象被rejectWithValue包了一层
+
+## 异步导出
+
+和普通异步action的区别只在于slice文件里创建action时的传参
+-- 返回errno或网络错误时，自动报错 且 不打开下载弹窗
+-- 成功时，自动打开下载弹窗
+
+```js
+// 统一创建thunk
+const createSimpleAsyncThunk = createServiceAsyncThunkCreator(NAMESPACE, services)
+// 普通异步action
+export const getDowngrade = createSimpleAsyncThunk('getDowngrade')
+// 多了一个参数
+export const exportExcel = createSimpleAsyncThunk('exportExcel', { isDownload: true })
 ```
 
