@@ -1,167 +1,15 @@
 ---
-title: ES6 中的 Generator
+title: ES6 中的 Generator 相关的
 category: 异步
 date: 2020-12-19
-top: 93
+top: 92
 ---
 
-ES6 诞生以前，异步编程的方法，大概有下面四种。
+## Generator 与 协程
 
-> 回调函数
-> 事件监听
-> 发布/订阅
-> Promise 对象
 
-Generator 函数将 JavaScript 异步编程带入了一个全新的阶段。
 
-## Generator简介
 
-先来一段最基础的Generator代码
-
-```js
-function* Hello() {
-  console.log(1)
-  const a = yield 100
-  console.log(2)
-  const b = yield (function () {return 200})()
-  console.log(3)
-  return 300
-}
-
-var h = Hello() // Hello内部的代码不会立即执行，而是处于一个暂停状态
-console.log(typeof h)  // object 而不是一个function
-
-console.log(h.next())  // 1 { value: 100, done: false }
-console.log(h.next())  // 2 { value: 200, done: false }
-console.log(h.next())  // 3 { value: 300, done: true }
-console.log(h.next())  // { value: undefined, done: true }
-```
-
-## Generator如何处理异步操作
-
-上面只是一个最基本最简单的介绍，但是我们看不到任何与异步操作相关的事情，那我们接下来就先展示一下最终我们将使用Generator如何做异步操作。
-
-之前讲解Promise时候，依次读取多个文件，我们是这么操作的（看不明白的需要回炉重造哈），主要是使用then做链式操作。
-
-```js
-readFilePromise('some1.json').then(data => {
-  console.log(data)  // 打印第 1 个文件内容
-  return readFilePromise('some2.json')
-}).then(data => {
-  console.log(data)  // 打印第 2 个文件内容
-  return readFilePromise('some3.json')
-}).then(data => {
-  console.log(data)  // 打印第 3 个文件内容
-  return readFilePromise('some4.json')
-}).then(data=> {
-  console.log(data)  // 打印第 4 个文件内容
-})
-```
-
-而如果学会Generator那么读取多个文件就是如下这样写。先不要管如何实现的，光看一看代码，你就能比较出哪个更加简洁、更加易读、更加所谓的优雅！
-```js
-co(function* () {
-  const res1 = await readFilePromise('some1.json')
-  console.log(res1)
-  const res2 = await readFilePromise('some2.json')
-  console.log(res2)
-  const res3 = await readFilePromise('some3.json')
-  console.log(res3)
-})
-```
-
-接下来我们不会立刻讲解如何使用 Generator 做异步操作，而是看一看Generator是一个什么东西
-
-## Generator 和 Iterator 的关系
-
-Generator返回的是一个Iterator对象
-
-```js
-function* Hello() {
-  yield 100
-  yield (function () {return 200})()
-  return 300 
-}
-const h = Hello()
-console.log(h[Symbol.iterator])  // [Function: [Symbol.iterator]]
-```
-
-## Generator 的具体应用
-
-### next 方法的参数
-
-我们之前已经知道，yield具有返回数据的功能，除此之外，next还可以向yield传递数据
-
-```js
-function* G() {
-  const a = yield 100
-  console.log('a', a)  // a aaa
-  const b = yield 200
-  console.log('b', b)  // b bbb
-  const c = yield 300
-  console.log('c', c)  // c ccc
-}
-const g = G()
-g.next()    // value: 100, done: false
-g.next('aaa') // value: 200, done: false
-g.next('bbb') // value: 300, done: false
-g.next('ccc') // value: undefined, done: true
-```
-
-有一个要点需要注意，就g.next('aaa')是将'aaa'传递给上一个已经执行完了的yield语句前面的变量，而不是即将执行的yield前面的变量
-
-### 巧妙实现斐波那契数列
-
-```js
-function* fibonacci() {
-  let [prev, curr] = [0, 1]
-  for (;;) {
-    [prev, curr] = [curr, prev + curr]
-    // 将中间值通过 yield 返回，并且保留函数执行的状态，因此可以非常简单的实现 fibonacci
-    yield curr
-  }
-}
-for (let n of fibonacci()) {
-  if (n > 1000) {
-    break
-  }
-  console.log(n)
-}
-```
-
-### yield*语句
-
-如果有两个Generator，想要在第一个中包含第二个，如下需求：
-
-```js
-function* G1() {
-  yield 'a'
-  yield 'b'
-}
-function* G2() {
-  yield 'x'
-  yield 'y'
-}
-```
-
-这就可以用到yield*表达式
-
-```js
-function* G1() {
-  yield 'a'
-  yield* G2()  // 使用 yield* 执行 G2()
-  yield 'b'
-}
-function* G2() {
-  yield 'x'
-  yield 'y'
-}
-for (let item of G1()) {
-  console.log(item)
-}
-```
-
-之前学过的yield后面会接一个普通的 JS 对象，而yield*后面会接一个Generator，而且会把它其中的yield按照规则来一步一步执行。如果有多个Generator串联使用的话（例如Koa源码中），用yield*来操作非常方便。
 
 ## Thunk 函数
 
@@ -372,5 +220,8 @@ class MyKoa {
   }
 }
 ```
+
+
+## Generator 的具体应用
 
 
