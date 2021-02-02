@@ -57,8 +57,6 @@ readFileThunk((err, data) => {
 })
 ```
 
-## Generator 与异步操作
-
 ### 在Genertor中使用thunk函数
 
 这个比较简单了，之前都讲过的，直接看代码即可。代码中表达的意思，是要依次读取两个文件的内容
@@ -89,44 +87,7 @@ g.next().value((err, data1) => {
     })
 })
 ```
-上面 6 行左右的代码，却用了 6 行左右的注释来解释，可见代码的逻辑并不简单。第一它逻辑复杂，第二它也不是那么易读、简洁呀，用Generator实现异步操作就是这个样子的？———— 当然不是，继续往下看。
-
-### 自驱动流程
-
-以上代码中，读取两个文件的内容都是手动一行一行写的，而我们接下来要做一个自驱动的流程，定义好Generator的代码之后，就让它自动执行。完整的代码如下所示：
-
-```js
-function run(gen) {
-  const g = gen()
-  function next(err, data) {
-    let result = g.next() // 返回 { value: thunk函数, done: ... }
-    if (result.done) {
-      return
-    } else {
-      result.value(next) // result.value 需要一个 callback 函数作为参数，而 next 就是一个 callback 形式的函数
-    }
-  }
-  next() // 手动执行以启动第一次 next
-}
-run(gen)
-```
-
-## co
-
-刚才我们定义了一个run还是来做自助流程管理，是不是每次使用都得写一遍run函数呢？———— 肯定不是的，直接用大名鼎鼎的co就好了
-
-```js
-const c = co(gen)
-```
-
-而且const c = co(gen)返回的是一个Promise对象，可以接着这么写
-
-```js
-c.then(data => {
-    console.log('结束')
-})
-```
-
+上面 6 行左右的代码，却用了 6 行左右的注释来解释，可见代码的逻辑并不简单。第一它逻辑复杂，第二它也不是那么易读、简洁呀，用Generator实现异步操作就是这个样子的？———— 当然不是，可以查看 - 自动执行（下一篇）。
 ## koa 中使用 Generator
 
 koa 是一个 nodejs 开发的 web 框架，所谓 web 框架就是处理 http 请求的。开源的 nodejs 开发的 web 框架最初是 express。
