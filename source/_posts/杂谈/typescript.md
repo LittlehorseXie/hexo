@@ -1,5 +1,5 @@
 ---
-title: typescript使用
+title: typescript简单使用
 category: 杂谈
 date: 2020-10-28
 top: 94
@@ -18,12 +18,17 @@ top: 94
 ## typescript内置类型
 
 ### Partial
-将类型 T 的所有属性标记为可选属性
+
+`Partial<T>` 的作用就是将某个类型 `T` 里的属性全部变为可选项 `?`。
+
 ```ts
 type Partial<T> = {
     [P in keyof T]?: T[P];
 };
 ```
+
+在以上代码中，首先通过 `keyof T` 拿到 `T` 的所有属性名，然后使用 `in` 进行遍历，将值赋给 `P`，最后通过 `T[P]` 取得相应的属性值。中间的 `?` 号，用于将所有属性变为可选。
+
 使用场景：
 ```ts
 // 账号属性
@@ -43,6 +48,26 @@ const model: Partial<AccountInfo> = {
   name: '',
   vip: undefind
 }
+```
+
+```ts
+interface Todo {
+  title: string;
+  description: string;
+}
+
+function updateTodo(todo: Todo, fieldsToUpdate: Partial<Todo>) {
+  return { ...todo, ...fieldsToUpdate };
+}
+
+const todo1 = {
+  title: "Learn TS",
+  description: "Learn TypeScript",
+};
+
+const todo2 = updateTodo(todo1, {
+  description: "Learn TypeScript Enum",
+});
 ```
 
 ### Required
@@ -86,37 +111,6 @@ type CoreInfo = Pick<AccountInfo, 'name' | 'email'>
 */
 ```
 
-### Record<K, T>
-标记对象的 key value类型
-```ts
-type Record<K extends keyof any, T> = {
-    [P in K]: T;
-};
-```
-
-使用场景:
-
-```ts
-// 定义 学号(key)-账号信息(value) 的对象
-const accountMap: Record<number, AccountInfo> = {
-  10001: {
-    name: 'xx',
-    email: 'xxxxx',
-    // ...
-  }    
-}
-const user: Record<'name'|'email', string> = {
-    name: '', 
-    email: ''
-}
-// 复杂点的类型推断
-function mapObject<K extends string | number, T, U>(obj: Record<K, T>, f: (x: T) => U): Record<K, U>
-
-const names = { foo: "hello", bar: "world", baz: "bye" };
-// 此处推断 K, T 值为 string , U 为 number
-const lengths = mapObject(names, s => s.length);  // { foo: number, bar: number, baz: number }
-```
-
 ### Exclude<T, U>，Omit<T, K>
 移除 T 中的 U 属性
 ```ts
@@ -151,6 +145,38 @@ type Extract<T, U> = T extends U ? T : never;
 // 'b'|'c'
 type A = Extract<'a'|'b'|'c'|'d' ,'b'|'c'|'e' >  
 ```
+
+### Record<K, T>
+标记对象的 key value类型
+```ts
+type Record<K extends keyof any, T> = {
+    [P in K]: T;
+};
+```
+
+使用场景:
+
+```ts
+// 定义 学号(key)-账号信息(value) 的对象
+const accountMap: Record<number, AccountInfo> = {
+  10001: {
+    name: 'xx',
+    email: 'xxxxx',
+    // ...
+  }    
+}
+const user: Record<'name'|'email', string> = {
+    name: '', 
+    email: ''
+}
+// 复杂点的类型推断
+function mapObject<K extends string | number, T, U>(obj: Record<K, T>, f: (x: T) => U): Record<K, U>
+
+const names = { foo: "hello", bar: "world", baz: "bye" };
+// 此处推断 K, T 值为 string , U 为 number
+const lengths = mapObject(names, s => s.length);  // { foo: number, bar: number, baz: number }
+```
+
 
 ### NonNullable
 排除类型 T 的 null | undefined 属性
@@ -209,6 +235,7 @@ type ConstructorParameters<T extends new (...args: any) => any> = T extends new 
 type DateConstrParams = ConstructorParameters<typeof Date>
 ```
 
+
 ### ReturnType
 获取函数类型的返回类型
 ```ts
@@ -224,55 +251,11 @@ type InstanceType<T extends new (...args: any) => any> = T extends new (...args:
 使用方式和 ConstructorParameters<T> 类似，不再赘述
 
 
-## 一些关键字
 
-### never
+## never
 never 是 | 运算的幺元，即 x | never = x。例如之前的 Exclude<Result, string> 运算过程如下：
 
 ![](../../assets/杂谈/typescript1.png)
-
-### infer
-infer的作用是让TypeScript自己推断，并将推断的结果存储到一个临时名字中，并且只能用于extends语句中。它与泛型的区别在于，泛型是声明一个“参数”，而infer是声明一个“中间变量”
-
-具体应用可以见 Parameters 或 练习2
-
-### typeof
-用于获取一个“常量”的类型，这里的“常量”是指任何可以在编译期确定的东西，例如const、function、class等。它是从 实际运行代码  通向 类型系统 的单行道。理论上，任何运行时的符号名想要为类型系统所用，都要加上 typeof。但是class 比较特殊不需要加，因为 ts 的 class 出现得比 js 早，现有的为兼容性解决方案。
-
-```ts
-const config = { width: 2 }
-function getLen(str: string) { return str.length }
-
-type TConfig = typeof config // {width: number}
-type TGetLen = typeof getLen // (str: string) => number
-```
-
-### extends
-
-extends 本意为 “拓展”，也有人称其为 “继承”。在 TypeScript 中，extends 既可当作一个动词来扩展已有类型；也可当作一个形容词来对类型进行条件限定（例如用在泛型中）。在扩展已有类型时，不可以进行类型冲突的覆盖操作。例如，基类型中键 a 为 string，在扩展出的类型中无法将其改为 number。
-
-
-## 泛型是什么
-
-类型实际上可以进行一定的运算，要想写出的类型适用范围更广，不妨让它像函数一样可以接受参数。TS 的泛型便是起到这样的作用，你可以把它当作类型的参数。它和函数参数一样，可以有默认值。除此之外，还可以用 extends 对参数本身需要满足的条件进行限制。
-
-在定义一个函数、type、interface、class 时，在名称后面加上<> 表示即接受类型参数。而在实际调用时，不一定需要手动传入类型参数，TS 往往能自行推断出来。在 TS 推断不准时，再手动传入参数来纠正。
-
-```ts
-// 定义
-class React.Component<P = {}, S = {}, SS = any> { ... }
-interface IShowConfig<P extends IShowProps> { ... }
-// 调用
-class Modal extends React.Component<IModalProps, IModalState> { ... }
-```
-
-在定义泛型后，有两种方式使用，一种是传入泛型类型，另一种使用类型推断，即编译器根据其他参数类型来推断泛型类型。简单示例如下：
-```ts
-declare function fn<T>(arg: T): T; // 定义一个泛型函数
-
-const fn1 = fn<string>('hello');  // 第一种方式，传入泛型类型 string
-const fn2 = fn(1); // 第二种方式，从参数 arg 传入的类型 number，来推断出泛型 T 的类型是 number
-```
 
 ## declare
 在实际应用开发时有一种场景，当前作用域下可以访问某个变量，但这个变量并不由开发者控制。例如通过 Script 标签直接引入的第三方库 CDN、一些宿主环境的 API 等。这个时候可以利用 TS 的环境声明功能，来告诉 TS 当前作用域可以访问这些变量，以获得类型提醒。
