@@ -1,6 +1,6 @@
 ---
 title: ES7 中引入 async-await
-category: 异步
+category: es6
 date: 2020-12-19
 top: 90
 ---

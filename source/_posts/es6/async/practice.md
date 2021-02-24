@@ -1,6 +1,6 @@
 ---
 title: ES6 系列之异步处理实战
-category: 异步
+category: es6
 date: 2021-2-2
 top: 89
 ---

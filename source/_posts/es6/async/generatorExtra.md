@@ -1,6 +1,6 @@
 ---
 title: ES6 中的 Generator 相关的
-category: 异步
+category: es6
 date: 2020-12-19
 top: 92
 ---

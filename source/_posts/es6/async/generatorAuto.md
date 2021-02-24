@@ -1,6 +1,6 @@
 ---
 title: ES6 中的 Generator 自动执行
-category: 异步
+category: es6
 date: 2021-2-2
 top: 91
 ---

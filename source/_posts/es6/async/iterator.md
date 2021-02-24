@@ -1,6 +1,6 @@
 ---
 title: Iterator遍历器 和 for...of循环
-category: 异步
+category: es6
 date: 2020-12-19
 top: 95
 ---

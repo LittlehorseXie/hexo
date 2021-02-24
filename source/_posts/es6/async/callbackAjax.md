@@ -1,6 +1,6 @@
 ---
 title: 回调函数 和 ajax
-category: 异步
+category: es6
 date: 2020-12-18
 top: 100
 ---

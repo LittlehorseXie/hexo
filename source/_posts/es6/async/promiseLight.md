@@ -1,6 +1,6 @@
 ---
 title: Promise-红绿灯
-category: 异步
+category: es6
 date: 2021-2-2
 top: 96
 ---
