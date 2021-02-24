@@ -3,6 +3,10 @@ title: 第一个接口--司机管理
 category: 后端
 ---
 
+PHP中文手册：http://php.net/manual/zh/index.php
+PHP学习路线：https://github.com/yeszao/phproad
+Linux命令：http://man.linuxde.net/scp
+
 本文记录第一次写php接口（当然，是在搭好的odp基础上）所有的收获
 ‌
 ODP是PHP的集成环境 = PHP + WebServer
